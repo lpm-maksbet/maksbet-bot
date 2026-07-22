@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
@@ -32,11 +33,10 @@ class PanelView(View):
 
     @discord.ui.button(label="⚽ Obstaw Mecz", style=discord.ButtonStyle.primary, custom_id="btn_obstaw_mecz")
     async def btn_mecz(self, interaction: discord.Interaction, button: Button):
-        # Pokazuje dostępne mecze
-        otwarte_mecze = [f"**ID: {m_id}** — {data['d1']} vs {data['d2']} (1: `{data['k1']}` | X: `{data['kX']}` | 2: `{data['k2']}`) " for m_id, data in mecze_db.items() if data['status'] == "OTWARTY"]
+        otwarte_mecze = [f"**ID: {m_id}** — {data['d1']} vs {data['d2']} (1: `{data['k1']}` | X: `{data['kX']}` | 2: `{data['k2']}`)" for m_id, data in mecze_db.items() if data['status'] == "OTWARTY"]
         
         if not otwarte_mecze:
-            await interaction.response.send_message("❌ Baza nie posiada obecnie otwartych meczów do obstawienia!\nUżyj komendy: `!obstaw <ID_Meczu> <1/X/2> <kwota>`", ephemeral=True)
+            await interaction.response.send_message("❌ Brak otwartych meczów do obstawienia!\nUżyj: `!obstaw <ID_Meczu> <1/X/2> <kwota>`", ephemeral=True)
         else:
             opis = "\n".join(otwarte_mecze)
             await interaction.response.send_message(f"⚽ **DOSTĘPNE MECZE DO OBSTAWIENIA:**\n\n{opis}\n\n👉 Aby obstawić, wpisz na czacie:\n`!obstaw <ID_Meczu> <1/X/2> <kwota>`", ephemeral=True)
@@ -46,10 +46,10 @@ class PanelView(View):
         otwarte_ligi = [f"**ID Ligi: {l_id}** — {data['nazwa']}" for l_id, data in ligowe_db.items() if data['status'] == "OTWARTY"]
         
         if not otwarte_ligi:
-            await interaction.response.send_message("🏆 Brak aktywnych zakładów ligowych w tej chwili!\nUżyj komendy: `!obstawlige <ID_Ligi> <Twój_Typ> <kwota>`", ephemeral=True)
+            await interaction.response.send_message("🏆 Brak aktywnych zakładów ligowych w tej chwili!", ephemeral=True)
         else:
             opis = "\n".join(otwarte_ligi)
-            await interaction.response.send_message(f"🏆 **DOSTĘPNE ZAKŁADY LIGOWE:**\n\n{opis}\n\n👉 Aby obstawić, wpisz na czacie:\n`!obstawlige <ID_Ligi> <Twój_Typ> <kwota>`", ephemeral=True)
+            await interaction.response.send_message(f"🏆 **DOSTĘPNE ZAKŁADY LIGOWE:**\n\n{opis}", ephemeral=True)
 
     @discord.ui.button(label="🥇 Top 10 Prestiżu", style=discord.ButtonStyle.secondary, custom_id="btn_topka")
     async def btn_top(self, interaction: discord.Interaction, button: Button):
@@ -68,21 +68,20 @@ class PanelView(View):
 async def panel(ctx):
     pts = get_prestiz(ctx.author.id)
     embed = discord.Embed(title="🎰 GLÓWNY PANEL BUKMACHERSKI", description="Wybierz opcję poniżej, aby wyświetlić ofertę zakładów lub sprawdzić ranking!", color=discord.Color.blue())
-    embed.add_field(name="💳 Twój Stan Konta", value=f"💰 Posiadasz: **{pts} Punkty Prestiżu**", inline=False)
+    embed.add_field(name="💳 Twój Stan Konta", value=f"💰 Posiadasz: **{pts} Punktów Prestiżu**", inline=False)
     embed.set_footer(text="MaksBet System • Wybierz przycisk poniżej")
     
     await ctx.send(embed=embed, view=PanelView())
 
-# --- ZARZĄDZANIE PRESTIŻEM (DLA ADMINA) ---
+# --- ZARZĄDZANIE PRESTIŻEM (ADMIN) ---
 
 @bot.command(name="ustawprestiz")
 @commands.has_permissions(administrator=True)
 async def ustawprestiz(ctx, cel: str, kwota: int):
-    """Użycie: !ustawprestiz @gracz 5000 LUB !ustawprestiz all 5000"""
     if cel.lower() in ["@a", "all", "wszyscy"]:
         for user_id in prestiz_db:
             prestiz_db[user_id] = kwota
-        await ctx.send(f"✅ **Ustawiono `{kwota} PTS` dla WSZYSTKICH zarejestrowanych graczy!**")
+        await ctx.send(f"✅ Ustawiono `{kwota} PTS` dla WSZYSTKICH graczy!")
     elif ctx.message.mentions:
         user = ctx.message.mentions[0]
         prestiz_db[user.id] = kwota
@@ -93,20 +92,17 @@ async def ustawprestiz(ctx, cel: str, kwota: int):
 @bot.command(name="dodajprestiz")
 @commands.has_permissions(administrator=True)
 async def dodajprestiz(ctx, cel: str, kwota: int):
-    """Użycie: !dodajprestiz @gracz 500 LUB !dodajprestiz all 500"""
     if cel.lower() in ["@a", "all", "wszyscy"]:
         for user_id in prestiz_db:
             prestiz_db[user_id] += kwota
-        await ctx.send(f"🎁 **Dodano po `{kwota} PTS` dla WSZYSTKICH graczy!**")
+        await ctx.send(f"🎁 Dodano po `{kwota} PTS` dla WSZYSTKICH graczy!")
     elif ctx.message.mentions:
         user = ctx.message.mentions[0]
         get_prestiz(user.id)
         prestiz_db[user.id] += kwota
-        await ctx.send(f"🎁 Dodano **{kwota} PTS** użytkownikowi {user.mention}. Nowy stan: `{prestiz_db[user.id]} PTS`.")
+        await ctx.send(f"🎁 Dodano **{kwota} PTS** dla {user.mention}. Nowy stan: `{prestiz_db[user.id]} PTS`.")
     else:
         await ctx.send("❌ Oznacz użytkownika (`@nick`) lub wpisz `all` / `@a`!")
-
-# --- TOPKA PRESTIŻU ---
 
 @bot.command(name="topkaprestizu")
 async def topkaprestizu(ctx):
@@ -121,7 +117,7 @@ async def topkaprestizu(ctx):
     embed.description = description if description else "Brak zarejestrowanych graczy."
     await ctx.send(embed=embed)
 
-# --- BAZOWE ZARZĄDZANIE MECZAMI I ZAKŁADAMI ---
+# --- MECZE ---
 
 @bot.command(name="dodajmecz")
 @commands.has_permissions(administrator=True)
@@ -149,5 +145,9 @@ async def obstaw(ctx, id_meczu: str, typ: str, stawka: int):
     kupony_db.append({"user_id": ctx.author.id, "mecz_id": id_meczu, "typ": typ, "stawka": stawka, "ewk": ewk, "rozliczony": False})
     await ctx.send(f"✅ Kupon postawiony! Pobrało `{stawka} PTS`. Ewentualna wygrana: **{ewk} PTS**.")
 
-# Twój Token:
-bot.run("MTUyOTI3ODc4MTU5MDg2Mzk1Mw.GD75xM.5gVH4wFdUPGn4oywJQxztgHOHA7eaMIz7T5uuA")
+# Pobieranie tokena z Ustawień Koyeb
+TOKEN = os.environ.get("DISCORD_TOKEN")
+if TOKEN:
+    bot.run(TOKEN)
+else:
+    print("❌ BŁĄD: Brak podanego tokenu w zmiennych środowiskowych (DISCORD_TOKEN)!")
