@@ -245,6 +245,6 @@ async def dodajprestiz(ctx, cel: str, kwota: int):
         prestiz_db[user.id] += kwota
         await ctx.send(f"🎁 Dodano **{kwota} PTS** dla {user.mention}.")
 
-TOKEN = os.environ.get("DISCORD_TOKEN")
+TOKEN = os.environ.get("MTUyOTI3ODc4MTU5MDg2Mzk1Mw.Gm-jG8.VCygbgsi5pbIxT8Vk4zHMtQcSZsR2KXBdZ7Hl4")
 if TOKEN:
     bot.run(TOKEN)
