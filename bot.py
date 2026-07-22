@@ -4,8 +4,9 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View, Select, Modal, TextInput
 from flask import Flask
+from wsgiref.simple_server import make_server
 
-# --- MINI SERWER HTTP DLA RENDERA ---
+# --- SERWER HTTP W TLE (BEZPIECZNY DLA DISCORD.PY) ---
 app = Flask('')
 
 @app.route('/')
@@ -13,11 +14,12 @@ def home():
     return "Bot MaksBet dziala!"
 
 def run_http():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get("PORT", 10000))
+    server = make_server('0.0.0.0', port, app)
+    server.serve_forever()
 
 def keep_alive():
-    t = threading.Thread(target=run_http)
+    t = threading.Thread(target=run_http, daemon=True)
     t.start()
 
 # --- KONFIGURACJA BOTA DISCORD ---
@@ -28,7 +30,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 prestiz_db = {}
 kupony_db = []
 
-DEFAULT_PRESTIZ = 13
+DEFAULT_PRESTIZ = 1000
 
 def get_prestiz(user_id):
     if user_id not in prestiz_db:
@@ -163,7 +165,7 @@ class ObstawFormularz(Modal, title="🎰 STAWKA I POTENCJALNA WYGRANA"):
             "id": kupon_id,
             "user_id": interaction.user.id,
             "user_name": interaction.user.name,
-            "kategoria": self.kategoria,  # "MECZ" lub "LIGA"
+            "kategoria": self.kategoria,
             "typy": self.typ_opis,
             "stawka": stawka,
             "kurs_laczny": self.kurs,
@@ -301,7 +303,7 @@ class LigaSelectView(View):
         super().__init__()
         self.add_item(LigaSelect())
 
-# --- SYSTEM ROZLICZANIA ZAKŁADÓW DLA ADMINA (Z KATEGORIAMI) ---
+# --- SYSTEM ROZLICZANIA ZAKŁADÓW ---
 
 class RozliczKuponView(View):
     def __init__(self, kupon):
