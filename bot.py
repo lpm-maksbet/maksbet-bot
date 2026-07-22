@@ -1,18 +1,18 @@
 import os
 import discord
 from discord.ext import commands
-from discord.ui import Button, View
+from discord.ui import Button, View, Select
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Bazy danych w pamięci
-prestiz_db = {}  # user_id: int
-mecze_db = {}    # id_meczu: dict
-kupony_db = []   # lista słowników z kuponami
+# Bazy danych
+prestiz_db = {}
+mecze_db = {}
+kupony_db = []
 
-DEFAULT_PRESTIZ = 1000  # Startowy bilans
+DEFAULT_PRESTIZ = 1000
 MIN_KURS = 1.14
 
 def get_prestiz(user_id):
@@ -20,29 +20,101 @@ def get_prestiz(user_id):
         prestiz_db[user_id] = DEFAULT_PRESTIZ
     return prestiz_db[user_id]
 
-# --- OFERTA ZAKŁADÓW LIGOWYCH Z KURSAMI (NA PODSTAWIE SEZONU 1) ---
+# --- BAZA WSZYSTKICH ZAKŁADÓW LIGOWYCH ---
 OFERTA_LIGOWA = {
-    "L1": {"nazwa": "Mistrz Ligi — FC Leds", "kurs": 1.75},
-    "L2": {"nazwa": "Mistrz Ligi — Kocia Dynastia II", "kurs": 2.10},
-    "L3": {"nazwa": "Mistrz Ligi — FC CPELE", "kurs": 3.50},
-    "L4": {"nazwa": "Top 3 Ligi — Kocia Dynastia", "kurs": 2.20},
-    "L5": {"nazwa": "Ostatnie Miejsce — BGV", "kurs": 1.30},
-    "L6": {"nazwa": "Ostatnie Miejsce — Beryl FC", "kurs": 2.80},
-    "L7": {"nazwa": "Najlepszy Atak — FC Leds", "kurs": 1.60},
-    "L8": {"nazwa": "Najlepsza Obrona — FC CPELE", "kurs": 1.85},
-    "S1": {"nazwa": "Suma goli w sezonie: Powyżej 90.5", "kurs": 1.45},
-    "S2": {"nazwa": "Suma goli w sezonie: Poniżej 90.5", "kurs": 2.40},
-    "S3": {"nazwa": "Hat-trick w sezonie: TAK", "kurs": 1.35},
-    "S4": {"nazwa": "Sezon bez porażki dowolnej drużyny: TAK", "kurs": 4.50},
+    # MISTRZ LIGI
+    "M1": {"nazwa": "Mistrz Ligi — FC Leds", "kurs": 2.10},
+    "M2": {"nazwa": "Mistrz Ligi — Kocia Dynastia", "kurs": 2.50},
+    "M3": {"nazwa": "Mistrz Ligi — Storm Legion FC", "kurs": 3.20},
+    "M4": {"nazwa": "Mistrz Ligi — FC Dynamit", "kurs": 4.50},
+    "M5": {"nazwa": "Mistrz Ligi — MKS Stomil Minecraft", "kurs": 6.00},
+    "M6": {"nazwa": "Mistrz Ligi — FC Pitulice", "kurs": 8.50},
+    "M7": {"nazwa": "Mistrz Ligi — FC Galaxy", "kurs": 12.00},
+    "M8": {"nazwa": "Mistrz Ligi — NIEBIANSKE BRACTWO", "kurs": 15.00},
+    "M9": {"nazwa": "Mistrz Ligi — Zachrystia YTS", "kurs": 20.00},
+    "M10": {"nazwa": "Mistrz Ligi — Beryl FC", "kurs": 25.00},
+
+    # POZYCJE W TABELI
+    "T1": {"nazwa": "Górna połowa tabeli (Top 5) — FC Leds", "kurs": 1.20},
+    "T2": {"nazwa": "Górna połowa tabeli (Top 5) — Kocia Dynastia", "kurs": 1.25},
+    "T3": {"nazwa": "Górna połowa tabeli (Top 5) — FC Dynamit", "kurs": 1.65},
+    "T4": {"nazwa": "Dolna połowa tabeli (6-10) — Beryl FC", "kurs": 1.30},
+    "T5": {"nazwa": "Dolna połowa tabeli (6-10) — Zachrystia YTS", "kurs": 1.35},
+    "T6": {"nazwa": "Dolna połowa tabeli (6-10) — NIEBIANSKE BRACTWO", "kurs": 1.45},
+    "T7": {"nazwa": "Ostatnie miejsce w lidze — Beryl FC", "kurs": 2.20},
+    "T8": {"nazwa": "Ostatnie miejsce w lidze — Zachrystia YTS", "kurs": 2.80},
+
+    # ZAKŁAD NA PUCHAR LIGI
+    "P1": {"nazwa": "Zdobywca Pucharu Ligi — Storm Legion FC", "kurs": 2.80},
+    "P2": {"nazwa": "Zdobywca Pucharu Ligi — FC Leds", "kurs": 3.00},
+    "P3": {"nazwa": "Zdobywca Pucharu Ligi — Kocia Dynastia", "kurs": 3.50},
+    "P4": {"nazwa": "Zdobywca Pucharu Ligi — MKS Stomil Minecraft", "kurs": 5.50},
+
+    # STATYSTYKI MIESZANE (POŁOWY / GOLE / KARTKI)
+    "G1": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
+    "G2": {"nazwa": "Więcej goli padnie w 1. połowach meczów", "kurs": 2.20},
+    "G3": {"nazwa": "Suma goli w całym sezonie: Powyżej 120.5", "kurs": 1.55},
+    "G4": {"nazwa": "Suma goli w całym sezonie: Poniżej 120.5", "kurs": 2.25},
+    "K1": {"nazwa": "Liczba czerwonych kartek w sezonie: Powyżej 3.5", "kurs": 1.80},
+    "K2": {"nazwa": "Liczba czerwonych kartek w sezonie: Poniżej 3.5", "kurs": 1.90},
+    "K3": {"nazwa": "Liczba żółtych kartek w sezonie: Powyżej 25.5", "kurs": 1.60},
+    "K4": {"nazwa": "Liczba żółtych kartek w sezonie: Poniżej 25.5", "kurs": 2.10},
+
+    # ZAKŁADY SPECJALNE (TAK / NIE)
+    "S1": {"nazwa": "Hat-trick w dowolnym meczu: TAK", "kurs": 1.30},
+    "S2": {"nazwa": "Hat-trick w dowolnym meczu: NIE", "kurs": 3.20},
+    "S3": {"nazwa": "Sezon bez porażki dla mistrza: TAK", "kurs": 4.50},
+    "S4": {"nazwa": "Sezon bez porażki dla mistrza: NIE", "kurs": 1.18},
     "S5": {"nazwa": "Wynik 10:0 lub wyższy w meczu: TAK", "kurs": 2.10},
-    "S6": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.15}
+    "S6": {"nazwa": "Wynik 10:0 lub wyższy w meczu: NIE", "kurs": 1.65},
+    "S7": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.20},
+    "S8": {"nazwa": "Użycie VAR w finale: NIE", "kurs": 4.00},
 }
 
 @bot.event
 async def on_ready():
     print(f"✅ Bot MaksBet został pomyślnie uruchomiony jako: {bot.user}")
 
-# --- WIDOK INTERAKTYWNEGO PANELA ---
+# --- OKIENKO / ROZWIJANA LISTA Z ZAKŁADAMI (SELECT MENU) ---
+
+class LigaSelect(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=f"{info['nazwa']} (K: {info['kurs']})", value=kod)
+            for kod, info in list(OFERTA_LIGOWA.items())[:25] # Limit 25 pozycji w 1 okienku
+        ]
+        super().__init__(placeholder="👉 Kliknij tutaj, aby wybrać typ z listy...", min_values=1, max_values=10, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        wybrane_kody = self.values
+        laczny_kurs = 1.0
+        nazwy_typow = []
+
+        for kod in wybrane_kody:
+            kurs = OFERTA_LIGOWA[kod]["kurs"]
+            laczny_kurs *= kurs
+            nazwy_typow.append(OFERTA_LIGOWA[kod]["nazwa"])
+
+        laczny_kurs = round(laczny_kurs, 2)
+
+        # Tworzenie ramki podsumowania wyboru
+        embed = discord.Embed(title="📝 TWOJE ZAZNACZONE ZAKŁADY", color=discord.Color.green())
+        embed.description = "\n".join([f"• **{n}**" for n in nazwy_typow])
+        embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
+        embed.add_field(
+            name="👉 Jak to obstawić?", 
+            value=f"Wpisz na czacie:\n`!obstawlige {','.join(wybrane_kody)} <kwota>`\n*Przykład:* `!obstawlige {','.join(wybrane_kody[:2])} 500`", 
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+class LigaSelectView(View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(LigaSelect())
+
+# --- MAIN PANEL VIEW ---
 
 class PanelView(View):
     def __init__(self):
@@ -65,21 +137,10 @@ class PanelView(View):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @discord.ui.button(label="🏆 Obstaw Ligę", style=discord.ButtonStyle.success, custom_id="btn_liga")
+    @discord.ui.button(label="🏆 Obstaw Ligę (Okienko WYBORU)", style=discord.ButtonStyle.success, custom_id="btn_liga")
     async def btn_liga(self, interaction: discord.Interaction, button: Button):
-        embed = discord.Embed(title="🏆 OFERTA LIGOWA — DŁUGOTERMINOWA", description="Oto wybrane zakłady na podstawie statystyk z Sezonu 1:", color=discord.Color.gold())
-        
-        opis_oferty = ""
-        for kod, info in OFERTA_LIGOWA.items():
-            opis_oferty += f"▫️ **`{kod}`** — {info['nazwa']} (Kurs: **{info['kurs']}**)\n"
-            
-        embed.add_field(name="📊 Wybrane Zakłady i Kursy", value=opis_oferty, inline=False)
-        embed.add_field(
-            name="📝 Jak postawić kupon ligowy?", 
-            value="Wpisz na czacie:\n`!obstawlige <Kod1,Kod2,...> <kwota>`\n*Przykład:* `!obstawlige L1,S1,S3 200`\n*(Możesz łączyć max 10 kodów w jeden kupon!)*", 
-            inline=False
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        embed = discord.Embed(title="🏆 ZAKŁADY LIGOWE — WYBIERZ W OKIENKU", description="Wybierz interesujące Cię opcje z poniższego menu rozwijanego (możesz zaznaczyć do 10 pozycji na raz!):", color=discord.Color.gold())
+        await interaction.response.send_message(embed=embed, view=LigaSelectView(), ephemeral=True)
 
     @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
     async def btn_kupony(self, interaction: discord.Interaction, button: Button):
@@ -90,7 +151,7 @@ class PanelView(View):
             embed.description = "Nie posiadasz jeszcze żadnych postawionych kuponów."
         else:
             opis = ""
-            for i, k in enumerate(user_kupony[-5:], 1):  # Pokazuje 5 ostatnich
+            for i, k in enumerate(user_kupony[-5:], 1):
                 status = "⏳ W TRAKCIE" if not k["rozliczony"] else ("✅ WYGRANY" if k["wygrany"] else "❌ PRZEGRANY")
                 opis += f"**{i}. [{status}]** Typy: `{k['typy']}` | Stawka: `{k['stawka']} PTS` | EWK: **{k['ewk']} PTS**\n"
             embed.description = opis
@@ -108,25 +169,23 @@ class PanelView(View):
         embed = discord.Embed(title="🥇 Ranking Prestiżu (Top 10)", description=description if description else "Brak graczy.", color=discord.Color.gold())
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-# --- KOMENDA !PANEL ---
+# --- KOMENDY BOTA ---
 
 @bot.command(name="panel")
 async def panel(ctx):
     pts = get_prestiz(ctx.author.id)
-    embed = discord.Embed(title="🎰 GŁÓWNY PANEL BUKMACHERSKI", description="Kliknij przycisk poniżej, aby wyświetlić dedykowaną sekcję!", color=discord.Color.dark_theme())
+    embed = discord.Embed(title="🎰 GŁÓWNY PANEL BUKMACHERSKI", description="Kliknij przycisk poniżej, aby skorzystać z oferty zakładowej!", color=discord.Color.dark_theme())
     embed.add_field(name="💳 Stan Twojego Konta", value=f"💰 **{pts} Punktów Prestiżu**", inline=False)
     embed.set_footer(text="MaksBet • Wybierz opcję")
     
     await ctx.send(embed=embed, view=PanelView())
-
-# --- SYSTEM OBSTAWIANIA LIGI (AKUMULATOR AKO) ---
 
 @bot.command(name="obstawlige")
 async def obstawlige(ctx, kody_str: str, stawka: int):
     kody = [k.strip().upper() for k in kody_str.split(",")]
     
     if len(kody) > 10:
-        await ctx.send("❌ **Przekroczono limit!** Na jednym kuponie możesz połączyć maksymalnie **10 zdarzeń**.")
+        await ctx.send("❌ **Przekroczono limit!** Maksymalnie 10 zdarzeń na kuponie.")
         return
 
     laczny_kurs = 1.0
@@ -134,18 +193,18 @@ async def obstawlige(ctx, kody_str: str, stawka: int):
     
     for kod in kody:
         if kod not in OFERTA_LIGOWA:
-            await ctx.send(f"❌ Kod zakładu `{kod}` nie istnieje w ofercie ligowej!")
+            await ctx.send(f"❌ Kod zakładu `{kod}` nie istnieje!")
             return
         kurs = OFERTA_LIGOWA[kod]["kurs"]
         if kurs < MIN_KURS:
-            await ctx.send(f"❌ Kurs zdarzenia `{kod}` ({kurs}) jest niższy niż minimalny **{MIN_KURS}**!")
+            await ctx.send(f"❌ Kurs zdarzenia `{kod}` jest niższy niż {MIN_KURS}!")
             return
         laczny_kurs *= kurs
         nazwy_typow.append(kod)
 
     pts = get_prestiz(ctx.author.id)
     if stawka <= 0 or stawka > pts:
-        await ctx.send(f"❌ Nie masz tylu punktów! Twój stan konta: `{pts} PTS`.")
+        await ctx.send(f"❌ Nie masz tylu punktów! Masz: `{pts} PTS`.")
         return
 
     laczny_kurs = round(laczny_kurs, 2)
@@ -163,61 +222,11 @@ async def obstawlige(ctx, kody_str: str, stawka: int):
     })
     
     embed = discord.Embed(title="✅ KUPON LIGOWY POSTAWIONY!", color=discord.Color.green())
-    embed.add_field(name="Wybrane typy", value=f"`{', '.join(nazwy_typow)}`", inline=False)
+    embed.add_field(name="Wybrane kody", value=f"`{', '.join(nazwy_typow)}`", inline=False)
     embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
     embed.add_field(name="Stawka", value=f"`{stawka} PTS`", inline=True)
     embed.add_field(name="Ewentualna Wygrana (EWK)", value=f"💰 **{ewk} PTS**", inline=False)
     
-    await ctx.send(embed=embed)
-
-# --- MECZE ORAZ ZARZĄDZANIE PRESTIŻEM ---
-
-@bot.command(name="dodajmecz")
-@commands.has_permissions(administrator=True)
-async def dodajmecz(ctx, id_meczu: str, druzyna1: str, druzyna2: str, k1: float, kX: float, k2: float):
-    mecze_db[id_meczu] = {"d1": druzyna1, "d2": druzyna2, "k1": k1, "kX": kX, "k2": k2, "status": "OTWARTY"}
-    await ctx.send(f"⚽ Dodano mecz **{druzyna1} vs {druzyna2}** (ID: `{id_meczu}`).")
-
-@bot.command(name="obstaw")
-async def obstaw(ctx, id_meczu: str, typ: str, stawka: int):
-    typ = typ.upper()
-    if id_meczu not in mecze_db or mecze_db[id_meczu]["status"] != "OTWARTY":
-        await ctx.send("❌ Mecz nie istnieje lub zakłady są zamknięte!")
-        return
-    
-    pts = get_prestiz(ctx.author.id)
-    if stawka <= 0 or stawka > pts:
-        await ctx.send("❌ Brak wystarczających środków!")
-        return
-
-    m = mecze_db[id_meczu]
-    kurs = m["k1"] if typ == "1" else (m["kX"] if typ == "X" else m["k2"])
-    if kurs < MIN_KURS:
-        await ctx.send(f"❌ Kurs spotkania jest niższy niż minimalny **{MIN_KURS}**!")
-        return
-
-    ewk = int(stawka * kurs)
-    prestiz_db[ctx.author.id] -= stawka
-    kupony_db.append({
-        "user_id": ctx.author.id,
-        "typy": f"Mecz {id_meczu} ({typ})",
-        "stawka": stawka,
-        "kurs_laczny": kurs,
-        "ewk": ewk,
-        "rozliczony": False,
-        "wygrany": False
-    })
-    await ctx.send(f"✅ Kupon postawiony! Pobrało `{stawka} PTS`. EWK: **{ewk} PTS**.")
-
-@bot.command(name="topkaprestizu")
-async def topkaprestizu(ctx):
-    sorted_users = sorted(prestiz_db.items(), key=lambda x: x[1], reverse=True)[:10]
-    embed = discord.Embed(title="🥇 Ranking Prestiżu (Top 10)", color=discord.Color.gold())
-    description = ""
-    for idx, (user_id, pts) in enumerate(sorted_users, 1):
-        user = await bot.fetch_user(user_id)
-        description += f"**{idx}.** {user.name} — `{pts} PTS`\n"
-    embed.description = description if description else "Brak graczy."
     await ctx.send(embed=embed)
 
 @bot.command(name="ustawprestiz")
@@ -243,7 +252,6 @@ async def dodajprestiz(ctx, cel: str, kwota: int):
         prestiz_db[user.id] += kwota
         await ctx.send(f"🎁 Dodano **{kwota} PTS** dla {user.mention}.")
 
-# Pobieranie tokena z ukrytych zmiennych hostingu
 TOKEN = os.environ.get("DISCORD_TOKEN")
 if TOKEN:
     bot.run(TOKEN)
