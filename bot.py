@@ -2,7 +2,7 @@ import os
 import threading
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select
+from discord.ui import Button, View, Select, Modal, TextInput
 from flask import Flask
 
 # --- MINI SERWER HTTP DLA RENDERA ---
@@ -37,27 +37,118 @@ def get_prestiz(user_id):
         prestiz_db[user_id] = DEFAULT_PRESTIZ
     return prestiz_db[user_id]
 
-# --- OFERTA LIGOWA ---
+# --- ROZBUDOWANA OFERTA ZAKŁADÓW LIGOWYCH ---
 OFERTA_LIGOWA = {
+    # MISTRZ & PODIUM
     "M1": {"nazwa": "Mistrz Ligi — FC Leds", "kurs": 2.10},
     "M2": {"nazwa": "Mistrz Ligi — Kocia Dynastia", "kurs": 2.50},
     "M3": {"nazwa": "Mistrz Ligi — Storm Legion FC", "kurs": 3.20},
     "M4": {"nazwa": "Mistrz Ligi — FC Dynamit", "kurs": 4.50},
     "M5": {"nazwa": "Mistrz Ligi — MKS Stomil Minecraft", "kurs": 6.00},
     "M10": {"nazwa": "Mistrz Ligi — Beryl FC", "kurs": 25.00},
+
+    # POŁOWY & CZAS ZDARZEŃ
+    "P1": {"nazwa": "Więcej goli padnie w 1. połowach meczów", "kurs": 2.20},
+    "P2": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
+    "P3": {"nazwa": "Równa liczba goli w obu połowach", "kurs": 3.40},
+    "P4": {"nazwa": "Więcej kartek w 2. połowach meczów", "kurs": 1.45},
+
+    # KRÓL STRZELCÓW & ASYST
     "KS1": {"nazwa": "Król Strzelców — BGVErek (Beryl FC)", "kurs": 1.80},
     "KS2": {"nazwa": "Król Strzelców — Kyranisek (FC Leds)", "kurs": 1.95},
+    "KS3": {"nazwa": "Król Strzelców — George (Stomil)", "kurs": 6.50},
     "KA1": {"nazwa": "Król Asyst — M4gro_ (Pitolice)", "kurs": 2.10},
     "KA2": {"nazwa": "Król Asyst — Kyranisek (FC Leds)", "kurs": 2.25},
-    "T1": {"nazwa": "Górna połowa tabeli (Top 5) — FC Leds", "kurs": 1.20},
-    "G1": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
+
+    # BRAMKI & OBRONA
+    "G1": {"nazwa": "Suma goli w całym sezonie: Powyżej 120.5", "kurs": 1.55},
+    "G2": {"nazwa": "Suma goli w całym sezonie: Poniżej 120.5", "kurs": 2.25},
+    "G3": {"nazwa": "Najlepsza obrona w lidze — FC CPELE", "kurs": 1.85},
+    "G4": {"nazwa": "Najsłabszy atak w lidze — BGV", "kurs": 1.30},
+
+    # KARTKI & RZUTY ROŻNE
+    "K1": {"nazwa": "Czerwone kartki w sezonie: Powyżej 3.5", "kurs": 1.80},
+    "K2": {"nazwa": "Czerwone kartki w sezonie: Poniżej 3.5", "kurs": 1.90},
+    "R1": {"nazwa": "Suma rzutów rożnych w sezonie: Powyżej 85.5", "kurs": 1.70},
+
+    # SPECJALNE TAK / NIE
     "S1": {"nazwa": "Hat-trick w dowolnym meczu: TAK", "kurs": 1.30},
-    "S7": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.20},
+    "S2": {"nazwa": "Hat-trick w dowolnym meczu: NIE", "kurs": 3.20},
+    "S3": {"nazwa": "Sezon bez porażki dla mistrza: TAK", "kurs": 4.50},
+    "S4": {"nazwa": "Sezon bez porażki dla mistrza: NIE", "kurs": 1.18},
+    "S5": {"nazwa": "Wynik 10:0 lub wyższy w meczu: TAK", "kurs": 2.10},
+    "S7": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.20}
 }
 
 @bot.event
 async def on_ready():
     print(f"✅ Bot MaksBet został pomyślnie uruchomiony jako: {bot.user}")
+
+# --- FORMULARZ / MODAL DO WPISYWANIA STAWKI ---
+
+class ObstawFormularz(Modal, title="🎰 POSTAW KUPON LIGOWY"):
+    stawka_input = TextInput(
+        label="Podaj stawkę (Punkty Prestiżu):",
+        placeholder="np. 200",
+        min_length=1,
+        max_length=6,
+        required=True
+    )
+
+    def __init__(self, wybrane_kody, laczny_kurs, nazwy_typow):
+        super().__init__()
+        self.wybrane_kody = wybrane_kody
+        self.laczny_kurs = laczny_kurs
+        self.nazwy_typow = nazwy_typow
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            stawka = int(self.stawka_input.value)
+        except ValueError:
+            await interaction.response.send_message("❌ Stawka musi być liczbą całkowitą!", ephemeral=True)
+            return
+
+        pts = get_prestiz(interaction.user.id)
+        if stawka <= 0 or stawka > pts:
+            await interaction.response.send_message(f"❌ Nie masz tylu punktów! Twój stan konta: `{pts} PTS`.", ephemeral=True)
+            return
+
+        ewk = int(stawka * self.laczny_kurs)
+        prestiz_db[interaction.user.id] -= stawka
+
+        kupony_db.append({
+            "user_id": interaction.user.id,
+            "typy": ", ".join(self.wybrane_kody),
+            "stawka": stawka,
+            "kurs_laczny": self.laczny_kurs,
+            "ewk": ewk,
+            "rozliczony": False,
+            "wygrany": False
+        })
+
+        embed = discord.Embed(title="✅ KUPON LIGOWY ZASTAŁ POSTAWIONY!", color=discord.Color.green())
+        embed.add_field(name="Zaznaczone typy", value="\n".join([f"• {n}" for n in self.nazwy_typow]), inline=False)
+        embed.add_field(name="Łączny Kurs AKO", value=f"**{self.laczny_kurs}**", inline=True)
+        embed.add_field(name="Stawka", value=f"`{stawka} PTS`", inline=True)
+        embed.add_field(name="💰 Potencjalna Wygrana (EWK)", value=f"**{ewk} PTS**", inline=False)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+# --- VIEW PRZYCISKU ZATWIERDZAJĄCEGO KUPON ---
+
+class PotwierdzKuponView(View):
+    def __init__(self, wybrane_kody, laczny_kurs, nazwy_typow):
+        super().__init__(timeout=120)
+        self.wybrane_kody = wybrane_kody
+        self.laczny_kurs = laczny_kurs
+        self.nazwy_typow = nazwy_typow
+
+    @discord.ui.button(label="💳 Postaw Ten Kupon", style=discord.ButtonStyle.success, emoji="🎰")
+    async def btn_postaw(self, interaction: discord.Interaction, button: Button):
+        modal = ObstawFormularz(self.wybrane_kody, self.laczny_kurs, self.nazwy_typow)
+        await interaction.response.send_modal(modal)
+
+# --- ROZWIJANA LISTA SELEKCJI ---
 
 class LigaSelect(Select):
     def __init__(self):
@@ -65,7 +156,7 @@ class LigaSelect(Select):
             discord.SelectOption(label=f"{info['nazwa'][:80]} (K: {info['kurs']})", value=kod)
             for kod, info in list(OFERTA_LIGOWA.items())[:25]
         ]
-        super().__init__(placeholder="👉 Wybierz zakłady z listy...", min_values=1, max_values=10, options=options)
+        super().__init__(placeholder="👉 Wybierz zdarzenia z listy...", min_values=1, max_values=10, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         wybrane_kody = self.values
@@ -79,20 +170,24 @@ class LigaSelect(Select):
 
         laczny_kurs = round(laczny_kurs, 2)
 
-        embed = discord.Embed(title="📝 ZAZNACZONE ZAKŁADY", color=discord.Color.green())
+        embed = discord.Embed(title="📝 ZAZNACZONE ZAKŁADY", color=discord.Color.gold())
         embed.description = "\n".join([f"• **{n}**" for n in nazwy_typow])
         embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
         embed.add_field(
-            name="👉 Jak to obstawić?", 
-            value=f"Wpisz na czacie:\n`!obstawlige {','.join(wybrane_kody)} <kwota>`", 
+            name="👉 Co dalej?", 
+            value="Kliknij poniższy przycisk **'Postaw Ten Kupon'**, wpisz stawkę i zatwierdź zakład!", 
             inline=False
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        view = PotwierdzKuponView(wybrane_kody, laczny_kurs, nazwy_typow)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 class LigaSelectView(View):
     def __init__(self):
         super().__init__()
         self.add_item(LigaSelect())
+
+# --- MAIN PANEL VIEW ---
 
 class PanelView(View):
     def __init__(self):
@@ -125,7 +220,7 @@ class PanelView(View):
 
     @discord.ui.button(label="🏆 Obstaw Ligę", style=discord.ButtonStyle.success, custom_id="btn_liga")
     async def btn_liga(self, interaction: discord.Interaction, button: Button):
-        embed = discord.Embed(title="🏆 OFERTA LIGOWA — WYBIERZ W OKIENKU", description="Wybierz z poniższej rozwijanej listy zakłady, które chcesz dodać do kuponu:", color=discord.Color.gold())
+        embed = discord.Embed(title="🏆 OFERTA LIGOWA — WYBIERZ Z LISTY", description="Zaznacz opcje w poniższym menu rozwijanym, a następnie wpisz kwotę w formularzu:", color=discord.Color.gold())
         await interaction.response.send_message(embed=embed, view=LigaSelectView(), ephemeral=True)
 
     @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
@@ -161,53 +256,7 @@ async def panel(ctx):
     embed.set_footer(text="MaksBet • Wybierz opcję")
     await ctx.send(embed=embed, view=PanelView())
 
-@bot.command(name="obstawlige")
-async def obstawlige(ctx, kody_str: str, stawka: int):
-    kody = [k.strip().upper() for k in kody_str.split(",")]
-    if len(kody) > 10:
-        await ctx.send("❌ **Przekroczono limit!** Maksymalnie 10 zdarzeń.")
-        return
-
-    laczny_kurs = 1.0
-    nazwy_typow = []
-    
-    for kod in kody:
-        if kod not in OFERTA_LIGOWA:
-            await ctx.send(f"❌ Kod `{kod}` nie istnieje!")
-            return
-        kurs = OFERTA_LIGOWA[kod]["kurs"]
-        if kurs < MIN_KURS:
-            await ctx.send(f"❌ Kurs zdarzenia `{kod}` jest za niski!")
-            return
-        laczny_kurs *= kurs
-        nazwy_typow.append(kod)
-
-    pts = get_prestiz(ctx.author.id)
-    if stawka <= 0 or stawka > pts:
-        await ctx.send(f"❌ Brak środków! Masz: `{pts} PTS`.")
-        return
-
-    laczny_kurs = round(laczny_kurs, 2)
-    ewk = int(stawka * laczny_kurs)
-    
-    prestiz_db[ctx.author.id] -= stawka
-    kupony_db.append({
-        "user_id": ctx.author.id,
-        "typy": ", ".join(nazwy_typow),
-        "stawka": stawka,
-        "kurs_laczny": laczny_kurs,
-        "ewk": ewk,
-        "rozliczony": False,
-        "wygrany": False
-    })
-    
-    embed = discord.Embed(title="✅ KUPON LIGOWY POSTAWIONY!", color=discord.Color.green())
-    embed.add_field(name="Wybrane typy", value=f"`{', '.join(nazwy_typow)}`", inline=False)
-    embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
-    embed.add_field(name="Stawka / EWK", value=f"`{stawka} PTS` ➔ **{ewk} PTS**", inline=True)
-    await ctx.send(embed=embed)
-
-# --- URUCHOMIENIE WEB SERVERA I BOTA ---
+# --- URUCHOMIENIE WERWERA I BOTA ---
 keep_alive()
 
 TOKEN = os.environ.get("DISCORD_TOKEN")
