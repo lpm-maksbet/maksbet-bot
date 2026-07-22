@@ -26,7 +26,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 prestiz_db = {}
-kupony_db = []  # Lista kuponów: {'id': int, 'user_id': int, 'user_name': str, 'typy': str, 'stawka': int, 'kurs_laczny': float, 'ewk': int, 'rozliczony': bool, 'wygrany': bool}
+kupony_db = []
 
 DEFAULT_PRESTIZ = 1000
 MIN_KURS = 1.14
@@ -36,7 +36,7 @@ def get_prestiz(user_id):
         prestiz_db[user_id] = DEFAULT_PRESTIZ
     return prestiz_db[user_id]
 
-# --- OFERTA BUKMACHERSKA 1. KOLEJKI (STYL STS) ---
+# --- OFERTA BUKMACHERSKA 1. KOLEJKI ---
 OFERTA_MECZOWA = {
     "M1": {
         "mecz": "FC Pitulice vs Niebiańskie Bractwo",
@@ -223,7 +223,7 @@ class MeczSelectView(View):
         super().__init__()
         self.add_item(MeczSelect())
 
-# --- SYSTEM ROZLICZANIA ZAKŁADÓW DLA ADMINISTRATORA ---
+# --- SYSTEM ROZLICZANIA ZAKŁADÓW ---
 
 class RozliczKuponView(View):
     def __init__(self, kupon):
@@ -281,4 +281,155 @@ class SelectKuponRozlicz(Select):
         embed.add_field(name="Gracz", value=f"**{kupon['user_name']}**", inline=True)
         embed.add_field(name="Stawka", value=f"`{kupon['stawka']} PTS`", inline=True)
         embed.add_field(name="Ewentualna Wygrana (EWK)", value=f"💰 **{kupon['ewk']} PTS**", inline=True)
-        embed.add_field(name="Postawione Typy", value=f"```{kupon['typy']}
+        embed.add_field(name="Postawione Typy", value=f"• {kupon['typy']}", inline=False)
+        embed.add_field(name="Wybierz wynik:", value="Kliknij **✅ Wygrany** lub **❌ Przegrany** poniżej.", inline=False)
+
+        await interaction.response.send_message(embed=embed, view=RozliczKuponView(kupon), ephemeral=True)
+
+class RozliczSelectView(View):
+    def __init__(self, aktywne_kupony):
+        super().__init__()
+        self.add_item(SelectKuponRozlicz(aktywne_kupony))
+
+# --- KOMENDA STATYSTYK GRACZY DLA ADMINA (!bzmistrz) ---
+
+@bot.command(name="bzmistrz", aliases=["statystyki"])
+@commands.has_permissions(administrator=True)
+async def bzmistrz(ctx):
+    rozliczone = [k for k in kupony_db if k["rozliczony"]]
+
+    if not rozliczone:
+        await ctx.send("❌ **Brak rozliczonych kuponów w historii! Statystyki pojawią się po rozliczeniu zakładów.**")
+        return
+
+    stats = {}
+
+    for k in rozliczone:
+        u_name = k["user_name"]
+        if u_name not in stats:
+            stats[u_name] = {"wygrane": 0, "przegrane": 0}
+        
+        if k["wygrany"]:
+            stats[u_name]["wygrane"] += 1
+        else:
+            stats[u_name]["przegrane"] += 1
+
+    embed = discord.Embed(
+        title="🏆 STATYSTYKI TYPERÓW (WIN RATIO)", 
+        description="Zestawienie wyników graczy i skuteczności typowania:\n", 
+        color=discord.Color.purple()
+    )
+
+    opis = ""
+    for idx, (name, data) in enumerate(stats.items(), 1):
+        w = data["wygrane"]
+        p = data["przegrane"]
+        lacznie = w + p
+        win_ratio = round((w / lacznie) * 100, 1) if lacznie > 0 else 0.0
+
+        opis += f"**{idx}. {name}**\n   └ 🟢 Wygrane: `{w}` | 🔴 Przegrane: `{p}` | 📊 Win Ratio: **{win_ratio}%**\n\n"
+
+    embed.description = opis
+    embed.set_footer(text="MaksBet Admin System • Statystyki Gracz vs Bukmacher")
+    await ctx.send(embed=embed)
+
+# --- KOMENDA POMOCY DLA ADMINA (!bzpomoc) ---
+
+@bot.command(name="bzpomoc")
+@commands.has_permissions(administrator=True)
+async def bzpomoc(ctx):
+    embed = discord.Embed(
+        title="👑 PANEL ZARZĄDZANIA BOTEAM — KOMENDY ADMINA", 
+        description="Oto lista wszystkich komend administracyjnych w bota MaksBet:", 
+        color=discord.Color.gold()
+    )
+    
+    embed.add_field(
+        name="🎫 Rozliczanie & Statystyki",
+        value=(
+            "• `!pokazzaklady` (lub `!rozlicz`) — Otwiera GUI do przeglądania i rozliczania aktywnych kuponów graczy.\n"
+            "• `!bzmistrz` (lub `!statystyki`) — Wyświetla wygrane, przegrane i procentowe Win Ratio wszystkich typerów."
+        ),
+        inline=False
+    )
+    
+    embed.add_field(
+        name="💰 Zarządzanie Prestiżem",
+        value=(
+            "• `!ustawprestiz <@gracz/all> <kwota>` — Ustawia określoną liczbę punktów dla gracza lub wszystkich.\n"
+            "• `!dodajprestiz <@gracz/all> <kwota>` — Dodaje wybraną liczbę punktów wskazanemu graczowi lub wszystkim."
+        ),
+        inline=False
+    )
+
+    embed.set_footer(text="MaksBet Admin System • Dostępne tylko dla Administracji")
+    await ctx.send(embed=embed)
+
+# --- KOMENDA !POKAZZAKLADY ---
+
+@bot.command(name="pokazzaklady", aliases=["rozlicz"])
+@commands.has_permissions(administrator=True)
+async def pokazzaklady(ctx):
+    aktywne_kupony = [k for k in kupony_db if not k["rozliczony"]]
+
+    if not aktywne_kupony:
+        await ctx.send("❌ **Brak aktywnych (nierozliczonych) kuponów w systemie.**")
+        return
+
+    embed = discord.Embed(title="⚙️ PANEL ROZLICZANIA ZAKŁADÓW (ADMIN)", description="Wybierz z listy poniżej kupon gracza, który chcesz rozliczyć:", color=discord.Color.gold())
+    await ctx.send(embed=embed, view=RozliczSelectView(aktywne_kupony))
+
+# --- GŁÓWNY PANEL BOTA ---
+
+class PanelView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="⚽ Obstaw Mecz (Rynki STS)", style=discord.ButtonStyle.primary, custom_id="btn_mecz")
+    async def btn_mecz(self, interaction: discord.Interaction, button: Button):
+        embed = discord.Embed(
+            title="🎯 ZAKŁADY MECZOWE 1. KOLEJKI (STYL STS)", 
+            description="Wybierz spotkanie z poniższego menu rozwijanego, aby zobaczyć pełną ofertę rynków:", 
+            color=discord.Color.blue()
+        )
+        await interaction.response.send_message(embed=embed, view=MeczSelectView(), ephemeral=True)
+
+    @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
+    async def btn_kupony(self, interaction: discord.Interaction, button: Button):
+        user_kupony = [k for k in kupony_db if k["user_id"] == interaction.user.id]
+        embed = discord.Embed(title=f"🎫 Kupony gracza {interaction.user.name}", color=discord.Color.purple())
+        if not user_kupony:
+            embed.description = "Nie posiadasz jeszcze żadnych postawionych kuponów."
+        else:
+            opis = ""
+            for i, k in enumerate(user_kupony[-5:], 1):
+                status = "⏳ W TRAKCIE" if not k["rozliczony"] else ("✅ WYGRANY" if k["wygrany"] else "❌ PRZEGRANY")
+                opis += f"**{i}. [{status}]** Kupon `#{k['id']}` | `{k['typy']}` | Stawka: `{k['stawka']} PTS` | EWK: **{k['ewk']} PTS**\n"
+            embed.description = opis
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="🥇 Top 10 Prestiżu", style=discord.ButtonStyle.secondary, custom_id="btn_top")
+    async def btn_top(self, interaction: discord.Interaction, button: Button):
+        sorted_users = sorted(prestiz_db.items(), key=lambda x: x[1], reverse=True)[:10]
+        description = ""
+        for idx, (user_id, pts) in enumerate(sorted_users, 1):
+            user = await bot.fetch_user(user_id)
+            description += f"**{idx}.** {user.name} — `{pts} PTS`\n"
+        
+        embed = discord.Embed(title="🥇 Ranking Prestiżu (Top 10)", description=description if description else "Brak graczy.", color=discord.Color.gold())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.command(name="panel")
+async def panel(ctx):
+    pts = get_prestiz(ctx.author.id)
+    embed = discord.Embed(title="🎰 GŁÓWNY PANEL BUKMACHERSKI MAKSBET", description="Kliknij przycisk poniżej, aby otworzyć ofertę!", color=discord.Color.dark_theme())
+    embed.add_field(name="💳 Stan Twojego Konta", value=f"💰 **{pts} Punktów Prestiżu**", inline=False)
+    embed.set_footer(text="MaksBet • Wybierz opcję")
+    await ctx.send(embed=embed, view=PanelView())
+
+# --- URUCHOMIENIE SERWERA I BOTA ---
+keep_alive()
+
+TOKEN = os.environ.get("DISCORD_TOKEN")
+if TOKEN:
+    bot.run(TOKEN)
