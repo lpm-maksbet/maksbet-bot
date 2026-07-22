@@ -36,7 +36,7 @@ def get_prestiz(user_id):
         prestiz_db[user_id] = DEFAULT_PRESTIZ
     return prestiz_db[user_id]
 
-# --- OFERTA BUKMACHERSKA 1. KOLEJKI ---
+# --- ROZBUDOWANA OFERTA MECZOWA 1. KOLEJKI (BZSTATS) ---
 OFERTA_MECZOWA = {
     "M1": {
         "mecz": "FC Pitulice vs Niebiańskie Bractwo",
@@ -45,14 +45,30 @@ OFERTA_MECZOWA = {
             "1": {"nazwa": "Wygrana: FC Pitulice", "kurs": 1.85},
             "X": {"nazwa": "Remis", "kurs": 3.40},
             "2": {"nazwa": "Wygrana: Niebiańskie Bractwo", "kurs": 2.65},
-            "1X": {"nazwa": "Podwójna szansa: FC Pitulice lub Remis", "kurs": 1.25},
+            "1X": {"nazwa": "1X (FC Pitulice lub Remis)", "kurs": 1.25},
+            "X2": {"nazwa": "X2 (Niebiańskie Bractwo lub Remis)", "kurs": 1.45},
+            "12": {"nazwa": "12 (Ktoś wygra - bez remisu)", "kurs": 1.22},
+            "G1.5": {"nazwa": "Liczba goli: Powyżej 1.5", "kurs": 1.22},
             "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.55},
-            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.60},
+            "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 2.20},
+            "G_P1.5": {"nazwa": "Liczba goli: Poniżej 1.5", "kurs": 3.80},
+            "G_P2.5": {"nazwa": "Liczba goli: Poniżej 2.5", "kurs": 2.25},
+            "BTTS_T": {"nazwa": "Obie strzelą (BTTS): TAK", "kurs": 1.60},
+            "BTTS_N": {"nazwa": "Obie strzelą (BTTS): NIE", "kurs": 2.15},
+            "ROZ7.5": {"nazwa": "Rzuty rożne: Powyżej 7.5", "kurs": 1.45},
             "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.70},
+            "ROZ9.5": {"nazwa": "Rzuty rożne: Powyżej 9.5", "kurs": 2.10},
             "KAR3.5": {"nazwa": "Żółte kartki: Powyżej 3.5", "kurs": 1.85},
-            "STRZ1": {"nazwa": "M4gro_ strzeli gola", "kurs": 2.10},
-            "CEL8.5": {"nazwa": "Celne strzały w meczu: Powyżej 8.5", "kurs": 1.75},
-            "CK1": {"nazwa": "Czyste konto: FC Pitulice", "kurs": 2.40}
+            "KAR4.5": {"nazwa": "Żółte kartki: Powyżej 4.5", "kurs": 2.40},
+            "CZK_T": {"nazwa": "Czerwona kartka: TAK", "kurs": 3.20},
+            "STRZ_M4GRO": {"nazwa": "M4gro_ strzeli gola", "kurs": 2.10},
+            "CEL8.5": {"nazwa": "Celne strzały: Powyżej 8.5", "kurs": 1.75},
+            "CK_PIT": {"nazwa": "Czyste konto: FC Pitulice", "kurs": 2.40},
+            "CK_NIEB": {"nazwa": "Czyste konto: Niebiańskie Bractwo", "kurs": 3.10},
+            "HANDI_1": {"nazwa": "Handicap: FC Pitulice -1.5 gola", "kurs": 2.80},
+            "P1_GOL": {"nazwa": "Gol w 1. połowie: TAK", "kurs": 1.30},
+            "GOL_10M": {"nazwa": "Gol do 10. minut: TAK", "kurs": 2.70},
+            "COMBO1": {"nazwa": "FC Pitulice wygra + Obie strzelą", "kurs": 2.90}
         }
     },
     "M2": {
@@ -62,13 +78,24 @@ OFERTA_MECZOWA = {
             "1": {"nazwa": "Wygrana: Kocia Dynastia", "kurs": 1.45},
             "X": {"nazwa": "Remis", "kurs": 3.80},
             "2": {"nazwa": "Wygrana: Zachrystia YTS", "kurs": 3.60},
+            "1X": {"nazwa": "1X (Kocia Dynastia lub Remis)", "kurs": 1.15},
+            "X2": {"nazwa": "X2 (Zachrystia YTS lub Remis)", "kurs": 1.80},
+            "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.35},
             "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 1.65},
-            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.50},
+            "G4.5": {"nazwa": "Liczba goli: Powyżej 4.5", "kurs": 2.35},
+            "G_P3.5": {"nazwa": "Liczba goli: Poniżej 3.5", "kurs": 2.10},
+            "BTTS_T": {"nazwa": "Obie strzelą (BTTS): TAK", "kurs": 1.50},
+            "BTTS_N": {"nazwa": "Obie strzelą (BTTS): NIE", "kurs": 2.30},
             "P1_G1.5": {"nazwa": "1. Połowa goli: Powyżej 1.5", "kurs": 1.90},
+            "P2_GOLI": {"nazwa": "Więcej goli w 2. połowie", "kurs": 1.65},
+            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.50},
             "ROZ9.5": {"nazwa": "Rzuty rożne: Powyżej 9.5", "kurs": 1.80},
-            "STRZ2": {"nazwa": "TubaSkibidik_ strzeli gola", "kurs": 1.75},
-            "KAR_CZ": {"nazwa": "Czerwona kartka w meczu: TAK", "kurs": 3.10},
-            "COMBO1": {"nazwa": "Kocia Dynastia wygra + Over 2.5 gola", "kurs": 1.70}
+            "STRZ_TUBA": {"nazwa": "TubaSkibidik_ strzeli gola", "kurs": 1.75},
+            "STRZ_OLUS": {"nazwa": "olus_bambyykk strzeli gola", "kurs": 2.50},
+            "KAR_CZ": {"nazwa": "Czerwona kartka: TAK", "kurs": 3.10},
+            "KARNY": {"nazwa": "Rzut karny w meczu: TAK", "kurs": 2.30},
+            "COMBO1": {"nazwa": "Kocia Dynastia wygra + Over 2.5 gola", "kurs": 1.70},
+            "COMBO2": {"nazwa": "Remis + Poniżej 3.5 gola", "kurs": 4.50}
         }
     },
     "M3": {
@@ -78,12 +105,20 @@ OFERTA_MECZOWA = {
             "1": {"nazwa": "Wygrana: Stomil Minecraft", "kurs": 2.20},
             "X": {"nazwa": "Remis", "kurs": 3.30},
             "2": {"nazwa": "Wygrana: Storm Legion FC", "kurs": 2.15},
+            "1X": {"nazwa": "1X (Stomil lub Remis)", "kurs": 1.35},
+            "X2": {"nazwa": "X2 (Storm Legion lub Remis)", "kurs": 1.32},
             "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.70},
-            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.55},
-            "STRZ3": {"nazwa": "George strzeli gola", "kurs": 1.90},
-            "ASYST1": {"nazwa": "Plankton93 zaliczy asystę", "kurs": 2.30},
-            "CEL10.5": {"nazwa": "Celne strzały w meczu: Powyżej 10.5", "kurs": 1.85},
-            "GOL10M": {"nazwa": "Gol przed 10. minutą: TAK", "kurs": 2.80}
+            "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 2.50},
+            "BTTS_T": {"nazwa": "Obie strzelą (BTTS): TAK", "kurs": 1.55},
+            "BTTS_N": {"nazwa": "Obie strzelą (BTTS): NIE", "kurs": 2.20},
+            "STRZ_GEORGE": {"nazwa": "George strzeli gola", "kurs": 1.90},
+            "STRZ_PLANK": {"nazwa": "Plankton93 strzeli gola", "kurs": 2.20},
+            "ASYST_PLANK": {"nazwa": "Plankton93 zaliczy asystę", "kurs": 2.30},
+            "CEL10.5": {"nazwa": "Celne strzały: Powyżej 10.5", "kurs": 1.85},
+            "GOL_10M": {"nazwa": "Gol przed 10. minutą: TAK", "kurs": 2.80},
+            "GOL_OBU": {"nazwa": "Gol w obu połowach: TAK", "kurs": 1.60},
+            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.65},
+            "KAR3.5": {"nazwa": "Żółte kartki: Powyżej 3.5", "kurs": 1.75}
         }
     },
     "M4": {
@@ -93,13 +128,24 @@ OFERTA_MECZOWA = {
             "1": {"nazwa": "Wygrana: Beryl FC", "kurs": 4.20},
             "X": {"nazwa": "Remis", "kurs": 4.00},
             "2": {"nazwa": "Wygrana: FC Leds", "kurs": 1.30},
+            "X2": {"nazwa": "X2 (FC Leds lub Remis)", "kurs": 1.10},
+            "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 1.45},
             "G4.5": {"nazwa": "Liczba goli: Powyżej 4.5", "kurs": 1.80},
-            "STRZ4": {"nazwa": "Kyranisek strzeli gola", "kurs": 1.40},
-            "STRZ5": {"nazwa": "BGVErek strzeli gola", "kurs": 1.85},
-            "HAT": {"nazwa": "Kyranisek strzeli Hat-Trick", "kurs": 3.20},
-            "HANDI2": {"nazwa": "Handicap: FC Leds -2.5 gola", "kurs": 2.10},
-            "CK2": {"nazwa": "Czyste konto: FC Leds", "kurs": 2.15},
-            "COMBO2": {"nazwa": "FC Leds wygra + Obie strzelą", "kurs": 2.25}
+            "G5.5": {"nazwa": "Liczba goli: Powyżej 5.5", "kurs": 2.60},
+            "BTTS_T": {"nazwa": "Obie strzelą (BTTS): TAK", "kurs": 1.45},
+            "BTTS_N": {"nazwa": "Obie strzelą (BTTS): NIE", "kurs": 2.50},
+            "STRZ_KYRAN": {"nazwa": "Kyranisek strzeli gola", "kurs": 1.40},
+            "STRZ_BGVER": {"nazwa": "BGVErek strzeli gola", "kurs": 1.85},
+            "STRZ_LALAN": {"nazwa": "Lalan_V strzeli gola", "kurs": 2.10},
+            "HAT_KYRAN": {"nazwa": "Kyranisek strzeli Hat-Trick", "kurs": 3.20},
+            "HAT_BGVER": {"nazwa": "BGVErek strzeli Hat-Trick", "kurs": 4.50},
+            "HANDI_2_2": {"nazwa": "Handicap: FC Leds -2.5 gola", "kurs": 2.10},
+            "HANDI_2_1": {"nazwa": "Handicap: FC Leds -1.5 gola", "kurs": 1.60},
+            "CK_LEDS": {"nazwa": "Czyste konto: FC Leds", "kurs": 2.15},
+            "CK_BERYL": {"nazwa": "Czyste konto: Beryl FC", "kurs": 6.50},
+            "CZK_T": {"nazwa": "Czerwona kartka: TAK", "kurs": 2.80},
+            "COMBO_LEDS_35": {"nazwa": "FC Leds wygra + Over 3.5 gola", "kurs": 1.75},
+            "COMBO_LEDS_BTTS": {"nazwa": "FC Leds wygra + Obie strzelą", "kurs": 2.25}
         }
     },
     "M5": {
@@ -109,13 +155,67 @@ OFERTA_MECZOWA = {
             "1": {"nazwa": "Wygrana: FC Dynamit", "kurs": 1.90},
             "X": {"nazwa": "Remis", "kurs": 3.30},
             "2": {"nazwa": "Wygrana: FC Galaxy", "kurs": 2.50},
+            "1X": {"nazwa": "1X (FC Dynamit lub Remis)", "kurs": 1.28},
+            "X2": {"nazwa": "X2 (FC Galaxy lub Remis)", "kurs": 1.42},
             "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.60},
-            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.50},
+            "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 2.30},
+            "BTTS_T": {"nazwa": "Obie strzelą (BTTS): TAK", "kurs": 1.50},
+            "BTTS_N": {"nazwa": "Obie strzelą (BTTS): NIE", "kurs": 2.35},
             "KARNY": {"nazwa": "Rzut karny w meczu: TAK", "kurs": 2.40},
             "P2_GOLI": {"nazwa": "Więcej goli w 2. połowie", "kurs": 1.65},
-            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.75}
+            "P1_GOLI": {"nazwa": "Więcej goli w 1. połowie", "kurs": 2.20},
+            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.75},
+            "KAR3.5": {"nazwa": "Żółte kartki: Powyżej 3.5", "kurs": 1.80},
+            "CK_DYN": {"nazwa": "Czyste konto: FC Dynamit", "kurs": 2.50}
         }
     }
+}
+
+# --- ROZBUDOWANA OFERTA LIGOWA (BZSTATS DŁUGOTERMINOWA) ---
+OFERTA_LIGOWA = {
+    # MISTRZ LIGI
+    "M1": {"nazwa": "Mistrz Ligi — FC Leds", "kurs": 2.10},
+    "M2": {"nazwa": "Mistrz Ligi — Kocia Dynastia", "kurs": 2.50},
+    "M3": {"nazwa": "Mistrz Ligi — Storm Legion FC", "kurs": 3.20},
+    "M4": {"nazwa": "Mistrz Ligi — FC Dynamit", "kurs": 4.50},
+    "M5": {"nazwa": "Mistrz Ligi — MKS Stomil Minecraft", "kurs": 6.00},
+    "M6": {"nazwa": "Mistrz Ligi — FC Pitulice", "kurs": 8.50},
+    "M7": {"nazwa": "Mistrz Ligi — FC Galaxy", "kurs": 12.00},
+    "M8": {"nazwa": "Mistrz Ligi — NIEBIANSKE BRACTWO", "kurs": 15.00},
+    "M9": {"nazwa": "Mistrz Ligi — Zachrystia YTS", "kurs": 20.00},
+    "M10": {"nazwa": "Mistrz Ligi — Beryl FC", "kurs": 25.00},
+
+    # KRÓL STRZELCÓW
+    "KS1": {"nazwa": "Król Strzelców — BGVErek (Beryl FC)", "kurs": 1.80},
+    "KS2": {"nazwa": "Król Strzelców — Kyranisek (FC Leds)", "kurs": 1.95},
+    "KS3": {"nazwa": "Król Strzelców — George (Stomil Minecraft)", "kurs": 6.50},
+    "KS4": {"nazwa": "Król Strzelców — TubaSkibidik_ (Kocia Dynastia)", "kurs": 7.00},
+    "KS5": {"nazwa": "Król Strzelców — Mracel (Beryl FC)", "kurs": 12.00},
+
+    # KRÓL ASYST
+    "KA1": {"nazwa": "Król Asyst — M4gro_ (Pitolice)", "kurs": 2.10},
+    "KA2": {"nazwa": "Król Asyst — Kyranisek (FC Leds)", "kurs": 2.25},
+    "KA3": {"nazwa": "Król Asyst — BGVErek (Beryl FC)", "kurs": 3.80},
+    "KA4": {"nazwa": "Król Asyst — Lalan_V (FC Leds)", "kurs": 4.50},
+
+    # POZYCJE W TABELI
+    "T1": {"nazwa": "Górna połowa tabeli (Top 5) — FC Leds", "kurs": 1.20},
+    "T2": {"nazwa": "Górna połowa tabeli (Top 5) — Kocia Dynastia", "kurs": 1.25},
+    "T3": {"nazwa": "Dolna połowa tabeli (6-10) — Beryl FC", "kurs": 1.30},
+    "T4": {"nazwa": "Dolna połowa tabeli (6-10) — Zachrystia YTS", "kurs": 1.35},
+    "T5": {"nazwa": "Ostatnie miejsce w lidze — Beryl FC", "kurs": 2.20},
+
+    # STATYSTYKI SEZONU & ZAKŁADY SPECJALNE
+    "G1": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
+    "G2": {"nazwa": "Więcej goli padnie w 1. połowach meczów", "kurs": 2.20},
+    "G3": {"nazwa": "Suma goli w całym sezonie: Powyżej 120.5", "kurs": 1.55},
+    "G4": {"nazwa": "Suma goli w całym sezonie: Poniżej 120.5", "kurs": 2.25},
+    "K1": {"nazwa": "Czerwone kartki w sezonie: Powyżej 3.5", "kurs": 1.80},
+    "K2": {"nazwa": "Żółte kartki w sezonie: Powyżej 25.5", "kurs": 1.60},
+    "S1": {"nazwa": "Hat-trick w dowolnym meczu: TAK", "kurs": 1.30},
+    "S2": {"nazwa": "Sezon bez porażki dla mistrza: TAK", "kurs": 4.50},
+    "S3": {"nazwa": "Wynik 10:0 lub wyższy w meczu: TAK", "kurs": 2.10},
+    "S4": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.20}
 }
 
 @bot.event
@@ -182,7 +282,7 @@ class MeczTypSelect(Select):
         m_info = OFERTA_MECZOWA[mecz_id]
         options = [
             discord.SelectOption(label=f"{t_data['nazwa']} (Kurs: {t_data['kurs']})", value=t_kod)
-            for t_kod, t_data in m_info["typy"].items()
+            for t_kod, t_data in list(m_info["typy"].items())[:25]
         ]
         super().__init__(placeholder=f"👉 Wybierz rynek dla: {m_info['mecz']}", options=options)
         self.mecz_id = mecz_id
@@ -213,7 +313,7 @@ class MeczSelect(Select):
         mecz_id = self.values[0]
         m_info = OFERTA_MECZOWA[mecz_id]
 
-        embed = discord.Embed(title=f"🎯 OFERTA STS: {m_info['mecz']}", color=discord.Color.blue())
+        embed = discord.Embed(title=f"🎯 RYNKI BZSTATS: {m_info['mecz']}", color=discord.Color.blue())
         embed.description = "Wybierz interesujący Cię rynek z poniższej listy:"
 
         await interaction.response.send_message(embed=embed, view=MeczTypView(mecz_id), ephemeral=True)
@@ -222,6 +322,29 @@ class MeczSelectView(View):
     def __init__(self):
         super().__init__()
         self.add_item(MeczSelect())
+
+# --- ROZWIJANA LISTA SELEKCJI DLA LIGI ---
+
+class LigaSelect(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=f"{info['nazwa'][:80]} (K: {info['kurs']})", value=kod)
+            for kod, info in list(OFERTA_LIGOWA.items())[:25]
+        ]
+        super().__init__(placeholder="👉 Wybierz zakłady ligowe z listy...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        kod = self.values[0]
+        info = OFERTA_LIGOWA[kod]
+        
+        opis = f"Długoterminowe — {info['nazwa']}"
+        modal = ObstawFormularz(opis, info['kurs'])
+        await interaction.response.send_modal(modal)
+
+class LigaSelectView(View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(LigaSelect())
 
 # --- SYSTEM ROZLICZANIA ZAKŁADÓW ---
 
@@ -385,14 +508,23 @@ class PanelView(View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="⚽ Obstaw Mecz (Rynki STS)", style=discord.ButtonStyle.primary, custom_id="btn_mecz")
+    @discord.ui.button(label="⚽ Obstaw Mecz (Rynki BZSTATS)", style=discord.ButtonStyle.primary, custom_id="btn_mecz")
     async def btn_mecz(self, interaction: discord.Interaction, button: Button):
         embed = discord.Embed(
-            title="🎯 ZAKŁADY MECZOWE 1. KOLEJKI (STYL STS)", 
+            title="🎯 ZAKŁADY MECZOWE 1. KOLEJKI (RYNKI BZSTATS)", 
             description="Wybierz spotkanie z poniższego menu rozwijanego, aby zobaczyć pełną ofertę rynków:", 
             color=discord.Color.blue()
         )
         await interaction.response.send_message(embed=embed, view=MeczSelectView(), ephemeral=True)
+
+    @discord.ui.button(label="🏆 Obstaw Ligę", style=discord.ButtonStyle.success, custom_id="btn_liga")
+    async def btn_liga(self, interaction: discord.Interaction, button: Button):
+        embed = discord.Embed(
+            title="🏆 ZAKŁADY LIGOWE — BZSTATS DŁUGOTERMINOWE", 
+            description="Wybierz zakład długoterminowy z poniższego menu rozwijanego:", 
+            color=discord.Color.gold()
+        )
+        await interaction.response.send_message(embed=embed, view=LigaSelectView(), ephemeral=True)
 
     @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
     async def btn_kupony(self, interaction: discord.Interaction, button: Button):
