@@ -28,27 +28,26 @@ OFERTA_LIGOWA = {
     "M3": {"nazwa": "Mistrz Ligi — Storm Legion FC", "kurs": 3.20},
     "M4": {"nazwa": "Mistrz Ligi — FC Dynamit", "kurs": 4.50},
     "M5": {"nazwa": "Mistrz Ligi — MKS Stomil Minecraft", "kurs": 6.00},
-    "M6": {"nazwa": "Mistrz Ligi — FC Pitulice", "kurs": 8.50},
-    "M7": {"nazwa": "Mistrz Ligi — FC Galaxy", "kurs": 12.00},
-    "M8": {"nazwa": "Mistrz Ligi — NIEBIANSKE BRACTWO", "kurs": 15.00},
-    "M9": {"nazwa": "Mistrz Ligi — Zachrystia YTS", "kurs": 20.00},
     "M10": {"nazwa": "Mistrz Ligi — Beryl FC", "kurs": 25.00},
+
+    # KRÓL STRZELCÓW
+    "KS1": {"nazwa": "Król Strzelców — BGVErek (Beryl FC)", "kurs": 1.80},
+    "KS2": {"nazwa": "Król Strzelców — Kyranisek (FC Leds)", "kurs": 1.95},
+    "KS3": {"nazwa": "Król Strzelców — George (Stomil)", "kurs": 6.50},
+    "KS4": {"nazwa": "Król Strzelców — TubaSkibidik_ (Kocia D.)", "kurs": 7.00},
+
+    # KRÓL ASYST
+    "KA1": {"nazwa": "Król Asyst — M4gro_ (Pitolice)", "kurs": 2.10},
+    "KA2": {"nazwa": "Król Asyst — Kyranisek (FC Leds)", "kurs": 2.25},
+    "KA3": {"nazwa": "Król Asyst — BGVErek (Beryl FC)", "kurs": 3.80},
+    "KA4": {"nazwa": "Król Asyst — Lalan_V (FC Leds)", "kurs": 4.50},
 
     # POZYCJE W TABELI
     "T1": {"nazwa": "Górna połowa tabeli (Top 5) — FC Leds", "kurs": 1.20},
     "T2": {"nazwa": "Górna połowa tabeli (Top 5) — Kocia Dynastia", "kurs": 1.25},
-    "T3": {"nazwa": "Górna połowa tabeli (Top 5) — FC Dynamit", "kurs": 1.65},
     "T4": {"nazwa": "Dolna połowa tabeli (6-10) — Beryl FC", "kurs": 1.30},
     "T5": {"nazwa": "Dolna połowa tabeli (6-10) — Zachrystia YTS", "kurs": 1.35},
-    "T6": {"nazwa": "Dolna połowa tabeli (6-10) — NIEBIANSKE BRACTWO", "kurs": 1.45},
     "T7": {"nazwa": "Ostatnie miejsce w lidze — Beryl FC", "kurs": 2.20},
-    "T8": {"nazwa": "Ostatnie miejsce w lidze — Zachrystia YTS", "kurs": 2.80},
-
-    # ZAKŁAD NA PUCHAR LIGI
-    "P1": {"nazwa": "Zdobywca Pucharu Ligi — Storm Legion FC", "kurs": 2.80},
-    "P2": {"nazwa": "Zdobywca Pucharu Ligi — FC Leds", "kurs": 3.00},
-    "P3": {"nazwa": "Zdobywca Pucharu Ligi — Kocia Dynastia", "kurs": 3.50},
-    "P4": {"nazwa": "Zdobywca Pucharu Ligi — MKS Stomil Minecraft", "kurs": 5.50},
 
     # STATYSTYKI MIESZANE (POŁOWY / GOLE / KARTKI)
     "G1": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
@@ -57,8 +56,6 @@ OFERTA_LIGOWA = {
     "G4": {"nazwa": "Suma goli w całym sezonie: Poniżej 120.5", "kurs": 2.25},
     "K1": {"nazwa": "Liczba czerwonych kartek w sezonie: Powyżej 3.5", "kurs": 1.80},
     "K2": {"nazwa": "Liczba czerwonych kartek w sezonie: Poniżej 3.5", "kurs": 1.90},
-    "K3": {"nazwa": "Liczba żółtych kartek w sezonie: Powyżej 25.5", "kurs": 1.60},
-    "K4": {"nazwa": "Liczba żółtych kartek w sezonie: Poniżej 25.5", "kurs": 2.10},
 
     # ZAKŁADY SPECJALNE (TAK / NIE)
     "S1": {"nazwa": "Hat-trick w dowolnym meczu: TAK", "kurs": 1.30},
@@ -75,15 +72,15 @@ OFERTA_LIGOWA = {
 async def on_ready():
     print(f"✅ Bot MaksBet został pomyślnie uruchomiony jako: {bot.user}")
 
-# --- OKIENKO / ROZWIJANA LISTA Z ZAKŁADAMI (SELECT MENU) ---
+# --- ROZWIJANA LISTA SELEKCJI ZAKŁADÓW ---
 
 class LigaSelect(Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label=f"{info['nazwa']} (K: {info['kurs']})", value=kod)
-            for kod, info in list(OFERTA_LIGOWA.items())[:25] # Limit 25 pozycji w 1 okienku
+            discord.SelectOption(label=f"{info['nazwa'][:80]} (K: {info['kurs']})", value=kod)
+            for kod, info in list(OFERTA_LIGOWA.items())[:25]  # Limit 25 pozycji w Discordzie
         ]
-        super().__init__(placeholder="👉 Kliknij tutaj, aby wybrać typ z listy...", min_values=1, max_values=10, options=options)
+        super().__init__(placeholder="👉 Kliknij i wybierz zakłady z listy...", min_values=1, max_values=10, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         wybrane_kody = self.values
@@ -97,7 +94,6 @@ class LigaSelect(Select):
 
         laczny_kurs = round(laczny_kurs, 2)
 
-        # Tworzenie ramki podsumowania wyboru
         embed = discord.Embed(title="📝 TWOJE ZAZNACZONE ZAKŁADY", color=discord.Color.green())
         embed.description = "\n".join([f"• **{n}**" for n in nazwy_typow])
         embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
@@ -114,7 +110,7 @@ class LigaSelectView(View):
         super().__init__()
         self.add_item(LigaSelect())
 
-# --- MAIN PANEL VIEW ---
+# --- PANIAL VIEW ---
 
 class PanelView(View):
     def __init__(self):
@@ -139,7 +135,11 @@ class PanelView(View):
 
     @discord.ui.button(label="🏆 Obstaw Ligę (Okienko WYBORU)", style=discord.ButtonStyle.success, custom_id="btn_liga")
     async def btn_liga(self, interaction: discord.Interaction, button: Button):
-        embed = discord.Embed(title="🏆 ZAKŁADY LIGOWE — WYBIERZ W OKIENKU", description="Wybierz interesujące Cię opcje z poniższego menu rozwijanego (możesz zaznaczyć do 10 pozycji na raz!):", color=discord.Color.gold())
+        embed = discord.Embed(
+            title="🏆 ZAKŁADY LIGOWE — INDYWIDUALNE I ZESPÓŁOWE", 
+            description="Wybierz interesujące Cię opcje z poniższego menu rozwijanego (możesz zaznaczyć do 10 pozycji naraz!):", 
+            color=discord.Color.gold()
+        )
         await interaction.response.send_message(embed=embed, view=LigaSelectView(), ephemeral=True)
 
     @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
