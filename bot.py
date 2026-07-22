@@ -7,7 +7,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Bazy danych
+# Bazy danych w pamięci
 prestiz_db = {}  # user_id: int
 mecze_db = {}    # id_meczu: dict
 kupony_db = []   # lista słowników z kuponami
@@ -125,12 +125,10 @@ async def panel(ctx):
 async def obstawlige(ctx, kody_str: str, stawka: int):
     kody = [k.strip().upper() for k in kody_str.split(",")]
     
-    # Weryfikacja liczby zdarzeń
     if len(kody) > 10:
         await ctx.send("❌ **Przekroczono limit!** Na jednym kuponie możesz połączyć maksymalnie **10 zdarzeń**.")
         return
 
-    # Weryfikacja czy kody istnieją i kurs min 1.14
     laczny_kurs = 1.0
     nazwy_typow = []
     
@@ -140,7 +138,7 @@ async def obstawlige(ctx, kody_str: str, stawka: int):
             return
         kurs = OFERTA_LIGOWA[kod]["kurs"]
         if kurs < MIN_KURS:
-            await ctx.send(f"❌ Kurs zdarzenia `{kod}` ({kurs}) jest niższy niż minimalny wymagany kurs **{MIN_KURS}**!")
+            await ctx.send(f"❌ Kurs zdarzenia `{kod}` ({kurs}) jest niższy niż minimalny **{MIN_KURS}**!")
             return
         laczny_kurs *= kurs
         nazwy_typow.append(kod)
@@ -245,6 +243,7 @@ async def dodajprestiz(ctx, cel: str, kwota: int):
         prestiz_db[user.id] += kwota
         await ctx.send(f"🎁 Dodano **{kwota} PTS** dla {user.mention}.")
 
-TOKEN = os.environ.get("MTUyOTI3ODc4MTU5MDg2Mzk1Mw.Gm-jG8.VCygbgsi5pbIxT8Vk4zHMtQcSZsR2KXBdZ7Hl4")
+# Pobieranie tokena z ukrytych zmiennych hostingu
+TOKEN = os.environ.get("DISCORD_TOKEN")
 if TOKEN:
     bot.run(TOKEN)
