@@ -26,8 +26,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 prestiz_db = {}
-mecze_db = {}
-kupony_db = []
+kupony_db = []  # Lista kuponów: {'id': int, 'user_id': int, 'user_name': str, 'typy': str, 'stawka': int, 'kurs_laczny': float, 'ewk': int, 'rozliczony': bool, 'wygrany': bool}
 
 DEFAULT_PRESTIZ = 1000
 MIN_KURS = 1.14
@@ -37,228 +36,249 @@ def get_prestiz(user_id):
         prestiz_db[user_id] = DEFAULT_PRESTIZ
     return prestiz_db[user_id]
 
-# --- ROZBUDOWANA OFERTA ZAKŁADÓW LIGOWYCH ---
-OFERTA_LIGOWA = {
-    # MISTRZ & PODIUM
-    "M1": {"nazwa": "Mistrz Ligi — FC Leds", "kurs": 2.10},
-    "M2": {"nazwa": "Mistrz Ligi — Kocia Dynastia", "kurs": 2.50},
-    "M3": {"nazwa": "Mistrz Ligi — Storm Legion FC", "kurs": 3.20},
-    "M4": {"nazwa": "Mistrz Ligi — FC Dynamit", "kurs": 4.50},
-    "M5": {"nazwa": "Mistrz Ligi — MKS Stomil Minecraft", "kurs": 6.00},
-    "M10": {"nazwa": "Mistrz Ligi — Beryl FC", "kurs": 25.00},
-
-    # POŁOWY & CZAS ZDARZEŃ
-    "P1": {"nazwa": "Więcej goli padnie w 1. połowach meczów", "kurs": 2.20},
-    "P2": {"nazwa": "Więcej goli padnie w 2. połowach meczów", "kurs": 1.65},
-    "P3": {"nazwa": "Równa liczba goli w obu połowach", "kurs": 3.40},
-    "P4": {"nazwa": "Więcej kartek w 2. połowach meczów", "kurs": 1.45},
-
-    # KRÓL STRZELCÓW & ASYST
-    "KS1": {"nazwa": "Król Strzelców — BGVErek (Beryl FC)", "kurs": 1.80},
-    "KS2": {"nazwa": "Król Strzelców — Kyranisek (FC Leds)", "kurs": 1.95},
-    "KS3": {"nazwa": "Król Strzelców — George (Stomil)", "kurs": 6.50},
-    "KA1": {"nazwa": "Król Asyst — M4gro_ (Pitolice)", "kurs": 2.10},
-    "KA2": {"nazwa": "Król Asyst — Kyranisek (FC Leds)", "kurs": 2.25},
-
-    # BRAMKI & OBRONA
-    "G1": {"nazwa": "Suma goli w całym sezonie: Powyżej 120.5", "kurs": 1.55},
-    "G2": {"nazwa": "Suma goli w całym sezonie: Poniżej 120.5", "kurs": 2.25},
-    "G3": {"nazwa": "Najlepsza obrona w lidze — FC CPELE", "kurs": 1.85},
-    "G4": {"nazwa": "Najsłabszy atak w lidze — BGV", "kurs": 1.30},
-
-    # KARTKI & RZUTY ROŻNE
-    "K1": {"nazwa": "Czerwone kartki w sezonie: Powyżej 3.5", "kurs": 1.80},
-    "K2": {"nazwa": "Czerwone kartki w sezonie: Poniżej 3.5", "kurs": 1.90},
-    "R1": {"nazwa": "Suma rzutów rożnych w sezonie: Powyżej 85.5", "kurs": 1.70},
-
-    # SPECJALNE TAK / NIE
-    "S1": {"nazwa": "Hat-trick w dowolnym meczu: TAK", "kurs": 1.30},
-    "S2": {"nazwa": "Hat-trick w dowolnym meczu: NIE", "kurs": 3.20},
-    "S3": {"nazwa": "Sezon bez porażki dla mistrza: TAK", "kurs": 4.50},
-    "S4": {"nazwa": "Sezon bez porażki dla mistrza: NIE", "kurs": 1.18},
-    "S5": {"nazwa": "Wynik 10:0 lub wyższy w meczu: TAK", "kurs": 2.10},
-    "S7": {"nazwa": "Użycie VAR w finale: TAK", "kurs": 1.20}
+# --- OFERTA BUKMACHERSKA 1. KOLEJKI (STYL STS) ---
+OFERTA_MECZOWA = {
+    "M1": {
+        "mecz": "FC Pitulice vs Niebiańskie Bractwo",
+        "data": "27.07 | 14:00",
+        "typy": {
+            "1": {"nazwa": "Wygrana: FC Pitulice", "kurs": 1.85},
+            "X": {"nazwa": "Remis", "kurs": 3.40},
+            "2": {"nazwa": "Wygrana: Niebiańskie Bractwo", "kurs": 2.65},
+            "1X": {"nazwa": "Podwójna szansa: FC Pitulice lub Remis", "kurs": 1.25},
+            "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.55},
+            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.60},
+            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.70},
+            "KAR3.5": {"nazwa": "Żółte kartki: Powyżej 3.5", "kurs": 1.85},
+            "STRZ1": {"nazwa": "M4gro_ strzeli gola", "kurs": 2.10},
+            "CEL8.5": {"nazwa": "Celne strzały w meczu: Powyżej 8.5", "kurs": 1.75},
+            "CK1": {"nazwa": "Czyste konto: FC Pitulice", "kurs": 2.40}
+        }
+    },
+    "M2": {
+        "mecz": "Kocia Dynastia vs Zachrystia YTS",
+        "data": "27.07 | 16:00",
+        "typy": {
+            "1": {"nazwa": "Wygrana: Kocia Dynastia", "kurs": 1.45},
+            "X": {"nazwa": "Remis", "kurs": 3.80},
+            "2": {"nazwa": "Wygrana: Zachrystia YTS", "kurs": 3.60},
+            "G3.5": {"nazwa": "Liczba goli: Powyżej 3.5", "kurs": 1.65},
+            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.50},
+            "P1_G1.5": {"nazwa": "1. Połowa goli: Powyżej 1.5", "kurs": 1.90},
+            "ROZ9.5": {"nazwa": "Rzuty rożne: Powyżej 9.5", "kurs": 1.80},
+            "STRZ2": {"nazwa": "TubaSkibidik_ strzeli gola", "kurs": 1.75},
+            "KAR_CZ": {"nazwa": "Czerwona kartka w meczu: TAK", "kurs": 3.10},
+            "COMBO1": {"nazwa": "Kocia Dynastia wygra + Over 2.5 gola", "kurs": 1.70}
+        }
+    },
+    "M3": {
+        "mecz": "MKS Stomil Minecraft vs Storm Legion FC",
+        "data": "27.07 | 18:00",
+        "typy": {
+            "1": {"nazwa": "Wygrana: Stomil Minecraft", "kurs": 2.20},
+            "X": {"nazwa": "Remis", "kurs": 3.30},
+            "2": {"nazwa": "Wygrana: Storm Legion FC", "kurs": 2.15},
+            "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.70},
+            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.55},
+            "STRZ3": {"nazwa": "George strzeli gola", "kurs": 1.90},
+            "ASYST1": {"nazwa": "Plankton93 zaliczy asystę", "kurs": 2.30},
+            "CEL10.5": {"nazwa": "Celne strzały w meczu: Powyżej 10.5", "kurs": 1.85},
+            "GOL10M": {"nazwa": "Gol przed 10. minutą: TAK", "kurs": 2.80}
+        }
+    },
+    "M4": {
+        "mecz": "🔥 Beryl FC vs FC Leds (HIT KOLEJKI)",
+        "data": "27.07 | 20:00",
+        "typy": {
+            "1": {"nazwa": "Wygrana: Beryl FC", "kurs": 4.20},
+            "X": {"nazwa": "Remis", "kurs": 4.00},
+            "2": {"nazwa": "Wygrana: FC Leds", "kurs": 1.30},
+            "G4.5": {"nazwa": "Liczba goli: Powyżej 4.5", "kurs": 1.80},
+            "STRZ4": {"nazwa": "Kyranisek strzeli gola", "kurs": 1.40},
+            "STRZ5": {"nazwa": "BGVErek strzeli gola", "kurs": 1.85},
+            "HAT": {"nazwa": "Kyranisek strzeli Hat-Trick", "kurs": 3.20},
+            "HANDI2": {"nazwa": "Handicap: FC Leds -2.5 gola", "kurs": 2.10},
+            "CK2": {"nazwa": "Czyste konto: FC Leds", "kurs": 2.15},
+            "COMBO2": {"nazwa": "FC Leds wygra + Obie strzelą", "kurs": 2.25}
+        }
+    },
+    "M5": {
+        "mecz": "FC Dynamit vs FC Galaxy",
+        "data": "28.07 | 14:00",
+        "typy": {
+            "1": {"nazwa": "Wygrana: FC Dynamit", "kurs": 1.90},
+            "X": {"nazwa": "Remis", "kurs": 3.30},
+            "2": {"nazwa": "Wygrana: FC Galaxy", "kurs": 2.50},
+            "G2.5": {"nazwa": "Liczba goli: Powyżej 2.5", "kurs": 1.60},
+            "BTTS": {"nazwa": "Obie drużyny strzelą (BTTS): TAK", "kurs": 1.50},
+            "KARNY": {"nazwa": "Rzut karny w meczu: TAK", "kurs": 2.40},
+            "P2_GOLI": {"nazwa": "Więcej goli w 2. połowie", "kurs": 1.65},
+            "ROZ8.5": {"nazwa": "Rzuty rożne: Powyżej 8.5", "kurs": 1.75}
+        }
+    }
 }
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot MaksBet został pomyślnie uruchomiony jako: {bot.user}")
+    print(f"✅ Bot MaksBet uruchomiony pomyślnie jako: {bot.user}")
 
-# --- FORMULARZ / MODAL DO WPISYWANIA STAWKI ---
+# --- FORMULARZ STAWKI ---
 
-class ObstawFormularz(Modal, title="🎰 POSTAW KUPON LIGOWY"):
+class ObstawFormularz(Modal, title="🎰 STAWKA I POTENCJALNA WYGRANA"):
     stawka_input = TextInput(
-        label="Podaj stawkę (Punkty Prestiżu):",
-        placeholder="np. 200",
+        label="Wpisz stawkę (Punkty Prestiżu):",
+        placeholder="np. 100",
         min_length=1,
         max_length=6,
         required=True
     )
 
-    def __init__(self, wybrane_kody, laczny_kurs, nazwy_typow):
+    def __init__(self, typ_opis, kurs):
         super().__init__()
-        self.wybrane_kody = wybrane_kody
-        self.laczny_kurs = laczny_kurs
-        self.nazwy_typow = nazwy_typow
+        self.typ_opis = typ_opis
+        self.kurs = kurs
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
             stawka = int(self.stawka_input.value)
         except ValueError:
-            await interaction.response.send_message("❌ Stawka musi być liczbą całkowitą!", ephemeral=True)
+            await interaction.response.send_message("❌ Stawka musi być liczbą!", ephemeral=True)
             return
 
         pts = get_prestiz(interaction.user.id)
         if stawka <= 0 or stawka > pts:
-            await interaction.response.send_message(f"❌ Nie masz tylu punktów! Twój stan konta: `{pts} PTS`.", ephemeral=True)
+            await interaction.response.send_message(f"❌ Brak środków! Twój stan konta: `{pts} PTS`.", ephemeral=True)
             return
 
-        ewk = int(stawka * self.laczny_kurs)
+        ewk = int(stawka * self.kurs)
         prestiz_db[interaction.user.id] -= stawka
 
+        kupon_id = len(kupony_db) + 1
         kupony_db.append({
+            "id": kupon_id,
             "user_id": interaction.user.id,
-            "typy": ", ".join(self.wybrane_kody),
+            "user_name": interaction.user.name,
+            "typy": self.typ_opis,
             "stawka": stawka,
-            "kurs_laczny": self.laczny_kurs,
+            "kurs_laczny": self.kurs,
             "ewk": ewk,
             "rozliczony": False,
             "wygrany": False
         })
 
-        embed = discord.Embed(title="✅ KUPON LIGOWY ZASTAŁ POSTAWIONY!", color=discord.Color.green())
-        embed.add_field(name="Zaznaczone typy", value="\n".join([f"• {n}" for n in self.nazwy_typow]), inline=False)
-        embed.add_field(name="Łączny Kurs AKO", value=f"**{self.laczny_kurs}**", inline=True)
+        embed = discord.Embed(title="✅ KUPON ZOSTAŁ POSTAWIONY!", color=discord.Color.green())
+        embed.add_field(name="Kupon ID", value=f"`#{kupon_id}`", inline=True)
+        embed.add_field(name="Wybrany Zakład", value=f"**{self.typ_opis}**", inline=False)
+        embed.add_field(name="Kurs", value=f"`{self.kurs}`", inline=True)
         embed.add_field(name="Stawka", value=f"`{stawka} PTS`", inline=True)
         embed.add_field(name="💰 Potencjalna Wygrana (EWK)", value=f"**{ewk} PTS**", inline=False)
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-# --- VIEW PRZYCISKU ZATWIERDZAJĄCEGO KUPON ---
+# --- WYBÓR ZAKŁADU DLA DANEGO MECZU ---
 
-class PotwierdzKuponView(View):
-    def __init__(self, wybrane_kody, laczny_kurs, nazwy_typow):
-        super().__init__(timeout=120)
-        self.wybrane_kody = wybrane_kody
-        self.laczny_kurs = laczny_kurs
-        self.nazwy_typow = nazwy_typow
-
-    @discord.ui.button(label="💳 Postaw Ten Kupon", style=discord.ButtonStyle.success, emoji="🎰")
-    async def btn_postaw(self, interaction: discord.Interaction, button: Button):
-        modal = ObstawFormularz(self.wybrane_kody, self.laczny_kurs, self.nazwy_typow)
-        await interaction.response.send_modal(modal)
-
-# --- ROZWIJANA LISTA SELEKCJI ---
-
-class LigaSelect(Select):
-    def __init__(self):
+class MeczTypSelect(Select):
+    def __init__(self, mecz_id):
+        m_info = OFERTA_MECZOWA[mecz_id]
         options = [
-            discord.SelectOption(label=f"{info['nazwa'][:80]} (K: {info['kurs']})", value=kod)
-            for kod, info in list(OFERTA_LIGOWA.items())[:25]
+            discord.SelectOption(label=f"{t_data['nazwa']} (Kurs: {t_data['kurs']})", value=t_kod)
+            for t_kod, t_data in m_info["typy"].items()
         ]
-        super().__init__(placeholder="👉 Wybierz zdarzenia z listy...", min_values=1, max_values=10, options=options)
+        super().__init__(placeholder=f"👉 Wybierz rynek dla: {m_info['mecz']}", options=options)
+        self.mecz_id = mecz_id
 
     async def callback(self, interaction: discord.Interaction):
-        wybrane_kody = self.values
-        laczny_kurs = 1.0
-        nazwy_typow = []
+        kod_typu = self.values[0]
+        m_info = OFERTA_MECZOWA[self.mecz_id]
+        t_data = m_info["typy"][kod_typu]
 
-        for kod in wybrane_kody:
-            kurs = OFERTA_LIGOWA[kod]["kurs"]
-            laczny_kurs *= kurs
-            nazwy_typow.append(OFERTA_LIGOWA[kod]["nazwa"])
+        opis = f"{m_info['mecz']} — {t_data['nazwa']}"
+        modal = ObstawFormularz(opis, t_data['kurs'])
+        await interaction.response.send_modal(modal)
 
-        laczny_kurs = round(laczny_kurs, 2)
+class MeczTypView(View):
+    def __init__(self, mecz_id):
+        super().__init__()
+        self.add_item(MeczTypSelect(mecz_id))
 
-        embed = discord.Embed(title="📝 ZAZNACZONE ZAKŁADY", color=discord.Color.gold())
-        embed.description = "\n".join([f"• **{n}**" for n in nazwy_typow])
-        embed.add_field(name="Łączny Kurs AKO", value=f"**{laczny_kurs}**", inline=True)
-        embed.add_field(
-            name="👉 Co dalej?", 
-            value="Kliknij poniższy przycisk **'Postaw Ten Kupon'**, wpisz stawkę i zatwierdź zakład!", 
-            inline=False
-        )
+class MeczSelect(Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=f"{data['mecz']} ({data['data']})", value=m_id)
+            for m_id, data in OFERTA_MECZOWA.items()
+        ]
+        super().__init__(placeholder="⚽ Wybierz mecz, który chcesz obstawić...", options=options)
 
-        view = PotwierdzKuponView(wybrane_kody, laczny_kurs, nazwy_typow)
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    async def callback(self, interaction: discord.Interaction):
+        mecz_id = self.values[0]
+        m_info = OFERTA_MECZOWA[mecz_id]
 
-class LigaSelectView(View):
+        embed = discord.Embed(title=f"🎯 OFERTA STS: {m_info['mecz']}", color=discord.Color.blue())
+        embed.description = "Wybierz interesujący Cię rynek z poniższej listy:"
+
+        await interaction.response.send_message(embed=embed, view=MeczTypView(mecz_id), ephemeral=True)
+
+class MeczSelectView(View):
     def __init__(self):
         super().__init__()
-        self.add_item(LigaSelect())
+        self.add_item(MeczSelect())
 
-# --- MAIN PANEL VIEW ---
+# --- SYSTEM ROZLICZANIA ZAKŁADÓW DLA ADMINISTRATORA ---
 
-class PanelView(View):
-    def __init__(self):
-        super().__init__(timeout=None)
+class RozliczKuponView(View):
+    def __init__(self, kupon):
+        super().__init__(timeout=120)
+        self.kupon = kupon
 
-    @discord.ui.button(label="⚽ Obstaw Mecz", style=discord.ButtonStyle.primary, custom_id="btn_mecz")
-    async def btn_mecz(self, interaction: discord.Interaction, button: Button):
-        embed = discord.Embed(title="🎯 DOSTĘPNE ZAKŁADY MECZOWE", color=discord.Color.blue())
-        otwarte_mecze = []
-        for m_id, data in mecze_db.items():
-            if data['status'] == "OTWARTY":
-                m_info = (
-                    f"⚔️ **[ID: {m_id}] {data['d1']} vs {data['d2']}**\n"
-                    f"▫️ **1X2:** 1: `{data['k1']}` | X: `{data['kX']}` | 2: `{data['k2']}`\n"
-                )
-                if "opcje" in data and data["opcje"]:
-                    m_info += f"▫️ **Inne rynki:** {data['opcje']}\n"
-                otwarte_mecze.append(m_info)
-
-        if not otwarte_mecze:
-            embed.description = "❌ **Brak otwartych meczów w tej chwili.**"
-        else:
-            embed.description = "\n".join(otwarte_mecze)
-            embed.add_field(
-                name="👉 Jak obstawić?", 
-                value="**Główny zakład (1X2):**\n`!obstaw <ID_Meczu> <1/X/2> <kwota>`\n\n**Zakład specjalny:**\n`!obstawmecz <ID_Meczu> <NazwaTypu> <Kurs> <Kwota>`", 
-                inline=False
-            )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @discord.ui.button(label="🏆 Obstaw Ligę", style=discord.ButtonStyle.success, custom_id="btn_liga")
-    async def btn_liga(self, interaction: discord.Interaction, button: Button):
-        embed = discord.Embed(title="🏆 OFERTA LIGOWA — WYBIERZ Z LISTY", description="Zaznacz opcje w poniższym menu rozwijanym, a następnie wpisz kwotę w formularzu:", color=discord.Color.gold())
-        await interaction.response.send_message(embed=embed, view=LigaSelectView(), ephemeral=True)
-
-    @discord.ui.button(label="🎫 Twoje Kupony", style=discord.ButtonStyle.blurple, custom_id="btn_kupony")
-    async def btn_kupony(self, interaction: discord.Interaction, button: Button):
-        user_kupony = [k for k in kupony_db if k["user_id"] == interaction.user.id]
-        embed = discord.Embed(title=f"🎫 Kupony gracza {interaction.user.name}", color=discord.Color.purple())
-        if not user_kupony:
-            embed.description = "Nie posiadasz jeszcze żadnych postawionych kuponów."
-        else:
-            opis = ""
-            for i, k in enumerate(user_kupony[-5:], 1):
-                status = "⏳ W TRAKCIE" if not k["rozliczony"] else ("✅ WYGRANY" if k["wygrany"] else "❌ PRZEGRANY")
-                opis += f"**{i}. [{status}]** Typy: `{k['typy']}` | Stawka: `{k['stawka']} PTS` | EWK: **{k['ewk']} PTS**\n"
-            embed.description = opis
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @discord.ui.button(label="🥇 Top 10 Prestiżu", style=discord.ButtonStyle.secondary, custom_id="btn_top")
-    async def btn_top(self, interaction: discord.Interaction, button: Button):
-        sorted_users = sorted(prestiz_db.items(), key=lambda x: x[1], reverse=True)[:10]
-        description = ""
-        for idx, (user_id, pts) in enumerate(sorted_users, 1):
-            user = await bot.fetch_user(user_id)
-            description += f"**{idx}.** {user.name} — `{pts} PTS`\n"
+    @discord.ui.button(label="✅ Wygrany", style=discord.ButtonStyle.success)
+    async def btn_wygrana(self, interaction: discord.Interaction, button: Button):
+        self.kupon["rozliczony"] = True
+        self.kupon["wygrany"] = True
         
-        embed = discord.Embed(title="🥇 Ranking Prestiżu (Top 10)", description=description if description else "Brak graczy.", color=discord.Color.gold())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        user_id = self.kupon["user_id"]
+        get_prestiz(user_id)
+        prestiz_db[user_id] += self.kupon["ewk"]
 
-@bot.command(name="panel")
-async def panel(ctx):
-    pts = get_prestiz(ctx.author.id)
-    embed = discord.Embed(title="🎰 GŁÓWNY PANEL BUKMACHERSKI", description="Kliknij przycisk poniżej, aby wyświetlić ofertę zakładową!", color=discord.Color.dark_theme())
-    embed.add_field(name="💳 Stan Twojego Konta", value=f"💰 **{pts} Punktów Prestiżu**", inline=False)
-    embed.set_footer(text="MaksBet • Wybierz opcję")
-    await ctx.send(embed=embed, view=PanelView())
+        embed = discord.Embed(title="✅ Kupon Rozliczony jako WYGRANY!", color=discord.Color.green())
+        embed.add_field(name="Gracz", value=f"**{self.kupon['user_name']}**", inline=True)
+        embed.add_field(name="Wygrana Kwota", value=f"💰 **+{self.kupon['ewk']} PTS**", inline=True)
+        embed.add_field(name="Kupon ID", value=f"`#{self.kupon['id']}`", inline=False)
+        
+        await interaction.response.edit_message(embed=embed, view=None)
 
-# --- URUCHOMIENIE WERWERA I BOTA ---
-keep_alive()
+    @discord.ui.button(label="❌ Przegrany", style=discord.ButtonStyle.danger)
+    async def btn_przegrana(self, interaction: discord.Interaction, button: Button):
+        self.kupon["rozliczony"] = True
+        self.kupon["wygrany"] = False
 
-TOKEN = os.environ.get("DISCORD_TOKEN")
-if TOKEN:
-    bot.run(TOKEN)
+        embed = discord.Embed(title="❌ Kupon Rozliczony jako PRZEGRANY!", color=discord.Color.red())
+        embed.add_field(name="Gracz", value=f"**{self.kupon['user_name']}**", inline=True)
+        embed.add_field(name="Kupon ID", value=f"`#{self.kupon['id']}`", inline=True)
+
+        await interaction.response.edit_message(embed=embed, view=None)
+
+class SelectKuponRozlicz(Select):
+    def __init__(self, aktywne_kupony):
+        options = [
+            discord.SelectOption(
+                label=f"Kupon #{k['id']} - {k['user_name']} ({k['stawka']} PTS)", 
+                description=f"{k['typy'][:50]}...",
+                value=str(k['id'])
+            )
+            for k in aktywne_kupony[:25]
+        ]
+        super().__init__(placeholder="👉 Wybierz kupon gracza do rozliczenia...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        kupon_id = int(self.values[0])
+        kupon = next((k for k in kupony_db if k["id"] == kupon_id), None)
+
+        if not kupon:
+            await interaction.response.send_message("❌ Nie znaleziono kuponu!", ephemeral=True)
+            return
+
+        embed = discord.Embed(title=f"📋 ROZLICZANIE KUPONU #{kupon['id']}", color=discord.Color.orange())
+        embed.add_field(name="Gracz", value=f"**{kupon['user_name']}**", inline=True)
+        embed.add_field(name="Stawka", value=f"`{kupon['stawka']} PTS`", inline=True)
+        embed.add_field(name="Ewentualna Wygrana (EWK)", value=f"💰 **{kupon['ewk']} PTS**", inline=True)
+        embed.add_field(name="Postawione Typy", value=f"```{kupon['typy']}
