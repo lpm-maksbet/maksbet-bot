@@ -30,7 +30,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 prestiz_db = {}
 kupony_db = []
 
-DEFAULT_PRESTIZ = 1000
+DEFAULT_PRESTIZ = 13
 
 def get_prestiz(user_id):
     if user_id not in prestiz_db:
